@@ -21,18 +21,31 @@ pub struct LspCommand {
 
 pub fn run(cmd: LspCommand) -> anyhow::Result<()> {
     let resolved = resolve(cmd.project_root.as_deref())?;
+    let lsp_ids: Vec<&str> = resolved
+        .merged
+        .lsps
+        .keys()
+        .map(String::as_str)
+        .collect();
 
     match cmd.output {
         LspOutput::Human => {
             println!("project_root={}", resolved.project_root.display());
             println!("config_hash={}", resolved.config_hash);
-            println!("lsp_id={}", resolved.merged.lsp.id);
+            if lsp_ids.is_empty() {
+                println!("configured_lsps=none (using catalog defaults)");
+            } else {
+                println!("configured_lsps={}", lsp_ids.join(", "));
+                for (id, lsp) in &resolved.merged.lsps {
+                    println!("  {id}: command={} args={:?}", lsp.command, lsp.args);
+                }
+            }
         }
         LspOutput::Json => {
             let payload = serde_json::json!({
                 "project_root": resolved.project_root,
                 "config_hash": resolved.config_hash,
-                "lsp_id": resolved.merged.lsp.id,
+                "configured_lsps": resolved.merged.lsps,
             });
             println!("{}", serde_json::to_string(&payload)?);
         }

@@ -124,7 +124,7 @@ fn apply_overrides(
         source,
     })?;
 
-    if let Some(partial_lsp) = parsed.lsp {
+    for partial_lsp in parsed.lsp {
         let id = partial_lsp.id.unwrap_or_else(|| "default".to_string());
         let entry = registry.lsp.entry(id).or_default();
 

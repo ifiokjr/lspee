@@ -220,7 +220,7 @@ async fn evict_session(
 #[cfg(test)]
 mod tests {
     use super::{MemoryBudgetSettings, MemorySample, select_evictions};
-    use lspee_config::{EffectiveConfig, LspConfig, MemoryConfig, ResolvedConfig, SessionConfig};
+    use lspee_config::LspConfig;
     use lspee_protocol::ClientKind;
     use std::{collections::BTreeMap, fs, path::PathBuf, time::Duration};
 
@@ -235,27 +235,16 @@ mod tests {
         fs::create_dir_all(&key.root).expect("sample root should exist");
 
         let transport = std::sync::Arc::new(lspee_lsp::LspTransport::new(key.root.clone()));
-        let resolved = ResolvedConfig {
-            project_root: key.root.clone(),
-            merged: EffectiveConfig {
-                lsp: LspConfig {
-                    id: key.server_id.clone(),
-                    command: "cat".to_string(),
-                    args: Vec::new(),
-                    env: BTreeMap::new(),
-                    initialization_options: BTreeMap::new(),
-                },
-                root_markers: vec![".git".to_string()],
-                workspace_mode: "single".to_string(),
-                transport_flags: BTreeMap::new(),
-                memory: MemoryConfig::default(),
-                session: SessionConfig::default(),
-            },
-            config_hash: "hash".to_string(),
+        let lsp_config = LspConfig {
+            id: key.server_id.clone(),
+            command: "cat".to_string(),
+            args: Vec::new(),
+            env: BTreeMap::new(),
+            initialization_options: BTreeMap::new(),
         };
         let runtime = std::sync::Arc::new(
             transport
-                .spawn(&resolved)
+                .spawn(&lsp_config)
                 .await
                 .expect("sample runtime should spawn"),
         );

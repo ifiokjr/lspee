@@ -376,7 +376,7 @@ mod tests {
     }
 
     #[test]
-    fn extract_all_28_capability_fields() {
+    fn extract_all_29_capability_fields() {
         let caps = extract_capabilities("empty-lsp", Some(&json!({"capabilities": {}})));
         let methods = caps["methods"].as_object().unwrap();
         assert_eq!(

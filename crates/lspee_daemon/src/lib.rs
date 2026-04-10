@@ -460,8 +460,12 @@ async fn dispatch_call(
         Ok(None) => error_envelope(id, ERROR_LEASE_NOT_FOUND, "Lease not found", false, None),
         Err(error) => {
             let message = error.to_string();
-            let (code, retryable) = if message.starts_with(ERROR_SESSION_EVICTED_MEMORY) {
+            let (code, retryable) = if message.contains(ERROR_SESSION_EVICTED_MEMORY) {
                 (ERROR_SESSION_EVICTED_MEMORY, true)
+            } else if message.contains("terminating") {
+                (ERROR_SESSION_RESTARTING, true)
+            } else if message.contains("timeout") || message.contains("timed out") {
+                (ERROR_TIMEOUT, true)
             } else {
                 (ERROR_INTERNAL, true)
             };
@@ -513,7 +517,7 @@ async fn dispatch_shutdown(
     payload: Value,
     shutdown_tx: &watch::Sender<bool>,
 ) -> DispatchOutcome {
-    let payload: Shutdown = match serde_json::from_value(payload) {
+    let _shutdown: Shutdown = match serde_json::from_value(payload) {
         Ok(payload) => payload,
         Err(_) => {
             return DispatchOutcome {
@@ -528,7 +532,6 @@ async fn dispatch_shutdown(
             };
         }
     };
-    let _ = payload;
 
     let _ = shutdown_tx.send(true);
     DispatchOutcome {
@@ -687,7 +690,7 @@ fn ok_envelope<T: serde::Serialize>(
         v: PROTOCOL_VERSION,
         id,
         message_type: message_type.to_string(),
-        payload: serde_json::to_value(payload).unwrap_or(Value::Null),
+        payload: serde_json::to_value(payload).expect("control payload must be serializable"),
     }
 }
 
@@ -708,7 +711,7 @@ fn error_envelope(
             retryable,
             details,
         })
-        .unwrap_or(Value::Null),
+        .expect("error payload must be serializable"),
     }
 }
 

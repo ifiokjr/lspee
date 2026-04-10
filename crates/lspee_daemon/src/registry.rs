@@ -18,20 +18,16 @@ const DEFAULT_IDLE_TTL: Duration = Duration::from_secs(300);
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SessionKey {
     pub root: PathBuf,
-    pub server_id: String,
+    pub lsp_id: String,
     pub config_hash: String,
 }
 
 impl SessionKey {
     #[must_use]
-    pub fn new(
-        root: PathBuf,
-        server_id: impl Into<String>,
-        config_hash: impl Into<String>,
-    ) -> Self {
+    pub fn new(root: PathBuf, lsp_id: impl Into<String>, config_hash: impl Into<String>) -> Self {
         Self {
             root,
-            server_id: server_id.into(),
+            lsp_id: lsp_id.into(),
             config_hash: config_hash.into(),
         }
     }

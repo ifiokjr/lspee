@@ -192,7 +192,7 @@ async fn evict_session(
         retryable: true,
         details: Some(json!({
             "project_root": sample.root,
-            "lsp_id": sample.key.server_id,
+            "lsp_id": sample.key.lsp_id,
             "rss_bytes": sample.rss_bytes,
             "max_session_bytes": settings.max_session_bytes,
             "max_total_bytes": settings.max_total_bytes,
@@ -236,7 +236,7 @@ mod tests {
 
         let transport = std::sync::Arc::new(lspee_lsp::LspTransport::new(key.root.clone()));
         let lsp_config = LspConfig {
-            id: key.server_id.clone(),
+            id: key.lsp_id.clone(),
             command: "cat".to_string(),
             args: Vec::new(),
             env: BTreeMap::new(),
@@ -291,7 +291,7 @@ mod tests {
         );
 
         assert_eq!(selected.len(), 1);
-        assert_eq!(selected[0].key.server_id, "b");
+        assert_eq!(selected[0].key.lsp_id, "b");
         cleanup_samples(&samples).await;
     }
 
@@ -312,7 +312,7 @@ mod tests {
         );
 
         assert_eq!(selected.len(), 1);
-        assert_eq!(selected[0].key.server_id, "agent");
+        assert_eq!(selected[0].key.lsp_id, "agent");
         cleanup_samples(&samples).await;
     }
 
@@ -334,8 +334,8 @@ mod tests {
         );
 
         assert_eq!(selected.len(), 2);
-        assert_eq!(selected[0].key.server_id, "old");
-        assert_eq!(selected[1].key.server_id, "new");
+        assert_eq!(selected[0].key.lsp_id, "old");
+        assert_eq!(selected[1].key.lsp_id, "new");
         cleanup_samples(&samples).await;
     }
 }

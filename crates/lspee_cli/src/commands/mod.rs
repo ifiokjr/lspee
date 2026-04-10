@@ -1,4 +1,5 @@
 pub mod call;
+pub mod capabilities;
 mod client;
 pub mod config;
 pub mod doctor;
@@ -18,6 +19,8 @@ pub enum Command {
     Lsp(lsp::LspCommand),
     /// Make a synchronous JSON request through the broker.
     Call(call::CallCommand),
+    /// Query LSP server capabilities (supported methods).
+    Capabilities(capabilities::CapabilitiesCommand),
     /// Show daemon and session broker status.
     Status(status::StatusCommand),
     /// Run the background daemon control server in the foreground.
@@ -40,6 +43,7 @@ pub fn run(command: Command) -> anyhow::Result<()> {
     match command {
         Command::Lsp(cmd) => lsp::run(cmd),
         Command::Call(cmd) => call::run(cmd),
+        Command::Capabilities(cmd) => capabilities::run(cmd),
         Command::Status(cmd) => status::run(cmd),
         Command::Serve(cmd) => serve::run(cmd),
         Command::Proxy(cmd) => proxy::run(cmd),

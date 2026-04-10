@@ -33,7 +33,7 @@ pub enum ConfigError {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EffectiveConfig {
     #[serde(default)]
-    pub lsp: LspConfig,
+    pub lsps: BTreeMap<String, LspConfig>,
     #[serde(default)]
     pub root_markers: Vec<String>,
     #[serde(default)]
@@ -44,6 +44,13 @@ pub struct EffectiveConfig {
     pub memory: MemoryConfig,
     #[serde(default)]
     pub session: SessionConfig,
+}
+
+impl EffectiveConfig {
+    /// Look up the config for a specific LSP by its id.
+    pub fn lsp_config(&self, id: &str) -> Option<&LspConfig> {
+        self.lsps.get(id)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,14 +101,32 @@ pub struct LspConfig {
     pub initialization_options: BTreeMap<String, toml::Value>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub struct PartialConfig {
-    pub lsp: Option<PartialLspConfig>,
+    #[serde(default, deserialize_with = "deserialize_lsp_entries")]
+    pub lsp: Vec<PartialLspConfig>,
     pub root_markers: Option<Vec<String>>,
     pub workspace_mode: Option<String>,
     pub transport_flags: Option<BTreeMap<String, String>>,
     pub memory: Option<PartialMemoryConfig>,
     pub session: Option<PartialSessionConfig>,
+}
+
+fn deserialize_lsp_entries<'de, D>(deserializer: D) -> Result<Vec<PartialLspConfig>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum LspField {
+        Single(PartialLspConfig),
+        Multiple(Vec<PartialLspConfig>),
+    }
+
+    Ok(match LspField::deserialize(deserializer)? {
+        LspField::Single(single) => vec![single],
+        LspField::Multiple(multiple) => multiple,
+    })
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -211,13 +236,7 @@ fn default_idle_ttl_secs() -> u64 {
 
 fn default_config() -> EffectiveConfig {
     EffectiveConfig {
-        lsp: LspConfig {
-            id: "default".to_string(),
-            command: "".to_string(),
-            args: Vec::new(),
-            env: BTreeMap::new(),
-            initialization_options: BTreeMap::new(),
-        },
+        lsps: BTreeMap::new(),
         root_markers: vec![".git".to_string()],
         workspace_mode: "single".to_string(),
         transport_flags: BTreeMap::new(),
@@ -227,21 +246,27 @@ fn default_config() -> EffectiveConfig {
 }
 
 fn apply_partial(merged: &mut EffectiveConfig, partial: PartialConfig) {
-    if let Some(lsp) = partial.lsp {
-        if let Some(id) = lsp.id {
-            merged.lsp.id = id;
-        }
+    for lsp in partial.lsp {
+        let id = lsp.id.clone().unwrap_or_else(|| "default".to_string());
+        let entry = merged.lsps.entry(id.clone()).or_insert_with(|| LspConfig {
+            id: id.clone(),
+            command: String::new(),
+            args: Vec::new(),
+            env: BTreeMap::new(),
+            initialization_options: BTreeMap::new(),
+        });
+
         if let Some(command) = lsp.command {
-            merged.lsp.command = command;
+            entry.command = command;
         }
         if let Some(args) = lsp.args {
-            merged.lsp.args = args;
+            entry.args = args;
         }
         if let Some(env) = lsp.env {
-            merged.lsp.env = env;
+            entry.env = env;
         }
         if let Some(initialization_options) = lsp.initialization_options {
-            merged.lsp.initialization_options = initialization_options;
+            entry.initialization_options = initialization_options;
         }
     }
 

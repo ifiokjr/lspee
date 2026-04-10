@@ -38,7 +38,7 @@ fn write_project_config_with_extras(root: &Path, extras: &str) {
         r#"
 workspace_mode = "single"
 
-[lsp]
+[[lsp]]
 id = "rust-analyzer"
 command = "cat"
 args = []

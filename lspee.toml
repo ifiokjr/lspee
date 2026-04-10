@@ -3,13 +3,21 @@
 workspace_mode = "single"
 root_markers = [".git", "Cargo.toml"]
 
-[lsp]
+# Multiple LSPs can be configured per project using [[lsp]] arrays.
+# Each entry is identified by its `id` field.
+
+[[lsp]]
 id = "rust-analyzer"
 command = "rust-analyzer"
 args = []
 
 [lsp.env]
 RUST_LOG = "error"
+
+[[lsp]]
+id = "taplo"
+command = "taplo"
+args = ["lsp", "stdio"]
 
 [transport_flags]
 request_timeout_ms = "5000"

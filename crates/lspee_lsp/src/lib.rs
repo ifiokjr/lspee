@@ -148,35 +148,35 @@ impl LspTransport {
         Self { root }
     }
 
-    pub fn prepare(&self, config: &lspee_config::ResolvedConfig) -> Result<()> {
-        if config.merged.lsp.command.trim().is_empty() {
+    pub fn prepare(&self, lsp: &lspee_config::LspConfig) -> Result<()> {
+        if lsp.command.trim().is_empty() {
             return Err(anyhow!(
-                "lsp command is empty; set [lsp].command in configuration"
+                "lsp command is empty; set [[lsp]].command in configuration"
             ));
         }
 
         tracing::debug!(
             root = ?self.root,
-            command = %config.merged.lsp.command,
-            args = ?config.merged.lsp.args,
+            command = %lsp.command,
+            args = ?lsp.args,
             "preparing lsp transport"
         );
         Ok(())
     }
 
-    pub async fn spawn(&self, config: &lspee_config::ResolvedConfig) -> Result<LspRuntime> {
-        self.prepare(config)?;
+    pub async fn spawn(&self, lsp: &lspee_config::LspConfig) -> Result<LspRuntime> {
+        self.prepare(lsp)?;
 
-        let mut cmd = Command::new(&config.merged.lsp.command);
-        cmd.args(&config.merged.lsp.args)
-            .envs(&config.merged.lsp.env)
+        let mut cmd = Command::new(&lsp.command);
+        cmd.args(&lsp.args)
+            .envs(&lsp.env)
             .current_dir(&self.root)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
 
         let mut child = cmd.spawn().with_context(|| {
-            format!("failed to spawn lsp command: {}", config.merged.lsp.command)
+            format!("failed to spawn lsp command: {}", lsp.command)
         })?;
 
         let stdin = child
@@ -298,7 +298,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{LspTransport, encode_lsp_frame};
-    use lspee_config::{EffectiveConfig, LspConfig, MemoryConfig, ResolvedConfig, SessionConfig};
+    use lspee_config::LspConfig;
     use serde_json::json;
     use std::{
         collections::BTreeMap,
@@ -307,24 +307,13 @@ mod tests {
         time::{SystemTime, UNIX_EPOCH},
     };
 
-    fn test_resolved_config(root: PathBuf, command: &str, args: Vec<String>) -> ResolvedConfig {
-        ResolvedConfig {
-            project_root: root,
-            merged: EffectiveConfig {
-                lsp: LspConfig {
-                    id: "test".to_string(),
-                    command: command.to_string(),
-                    args,
-                    env: BTreeMap::new(),
-                    initialization_options: BTreeMap::new(),
-                },
-                root_markers: vec![".git".to_string()],
-                workspace_mode: "single".to_string(),
-                transport_flags: BTreeMap::new(),
-                memory: MemoryConfig::default(),
-                session: SessionConfig::default(),
-            },
-            config_hash: "test-hash".to_string(),
+    fn test_lsp_config(command: &str, args: Vec<String>) -> LspConfig {
+        LspConfig {
+            id: "test".to_string(),
+            command: command.to_string(),
+            args,
+            env: BTreeMap::new(),
+            initialization_options: BTreeMap::new(),
         }
     }
 
@@ -353,11 +342,11 @@ mod tests {
     #[tokio::test]
     async fn runtime_call_roundtrips_with_cat_process() {
         let root = unique_temp_dir("cat");
-        let config = test_resolved_config(root.clone(), "cat", Vec::new());
+        let lsp = test_lsp_config("cat", Vec::new());
         let transport = LspTransport::new(root.clone());
 
         let runtime = transport
-            .spawn(&config)
+            .spawn(&lsp)
             .await
             .expect("cat runtime should spawn");
 

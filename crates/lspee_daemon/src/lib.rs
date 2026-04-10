@@ -76,9 +76,10 @@ impl Daemon {
     }
 
     pub async fn run(&self) -> Result<()> {
+        let configured_lsps: Vec<&str> = self.config.merged.lsps.keys().map(String::as_str).collect();
         tracing::info!(
             root = ?self.root,
-            default_lsp = %self.config.merged.lsp.id,
+            configured_lsps = ?configured_lsps,
             "starting daemon runtime"
         );
 
@@ -294,15 +295,16 @@ async fn dispatch_attach(
             let spawn_root = session_root.clone();
             let spawn_lsp_id = lsp_id.clone();
             async move {
-                let mut resolved =
+                let resolved =
                     lspee_config::resolve(Some(&spawn_root)).map_err(anyhow::Error::from)?;
 
-                apply_lsp_runtime_defaults(&mut resolved, &spawn_root, &spawn_lsp_id)?;
+                let lsp_config =
+                    resolve_lsp_config(&resolved, &spawn_root, &spawn_lsp_id)?;
 
                 let transport = Arc::new(lspee_lsp::LspTransport::new(spawn_root.clone()));
-                let runtime = Arc::new(transport.spawn(&resolved).await?);
+                let runtime = Arc::new(transport.spawn(&lsp_config).await?);
                 let initialize_result =
-                    bootstrap_lsp_session(&runtime, &spawn_root, &resolved).await?;
+                    bootstrap_lsp_session(&runtime, &spawn_root, &lsp_config).await?;
                 let (events, _) = tokio::sync::broadcast::channel(32);
 
                 Ok(SessionHandle {
@@ -552,14 +554,11 @@ fn preferred_stream_mode(capabilities: Option<&AttachCapabilities>) -> StreamMod
     }
 }
 
-fn apply_lsp_runtime_defaults(
-    resolved: &mut lspee_config::ResolvedConfig,
+fn resolve_lsp_config(
+    resolved: &lspee_config::ResolvedConfig,
     project_root: &Path,
     requested_lsp_id: &str,
-) -> Result<()> {
-    let existing_lsp_id = resolved.merged.lsp.id.clone();
-    let existing_command = resolved.merged.lsp.command.trim().to_string();
-
+) -> Result<lspee_config::LspConfig> {
     let user_config = std::env::var_os("HOME")
         .map(PathBuf::from)
         .map(|home| home.join(".config/lspee/config.toml"));
@@ -572,41 +571,45 @@ fn apply_lsp_runtime_defaults(
     )
     .map_err(anyhow::Error::from)?;
 
-    let explicit_config_for_requested_id =
-        existing_lsp_id == requested_lsp_id && !existing_command.is_empty();
-
-    resolved.merged.lsp.id = requested_lsp_id.to_string();
-
-    if explicit_config_for_requested_id {
-        if resolved.merged.lsp.args.is_empty() {
-            if let Some(catalog) = catalog {
-                resolved.merged.lsp.args = catalog.args;
+    // Check if project config has an explicit entry for this LSP.
+    if let Some(project_lsp) = resolved.merged.lsp_config(requested_lsp_id) {
+        let mut config = project_lsp.clone();
+        // Fill in gaps from catalog.
+        if config.command.trim().is_empty() {
+            if let Some(ref catalog) = catalog {
+                config.command.clone_from(&catalog.command);
             }
         }
-        return Ok(());
-    }
-
-    if let Some(catalog) = catalog {
-        resolved.merged.lsp.command = catalog.command;
-        resolved.merged.lsp.args = catalog.args;
-        if resolved.merged.root_markers.is_empty() {
-            resolved.merged.root_markers = catalog.root_markers;
+        if config.args.is_empty() {
+            if let Some(ref catalog) = catalog {
+                config.args.clone_from(&catalog.args);
+            }
+        }
+        if !config.command.trim().is_empty() {
+            return Ok(config);
         }
     }
 
-    if resolved.merged.lsp.command.trim().is_empty() {
-        return Err(anyhow!(
-            "no command found for lsp id '{requested_lsp_id}'. set [lsp].command or add a catalog entry"
-        ));
+    // Fall back to catalog.
+    if let Some(catalog) = catalog {
+        return Ok(lspee_config::LspConfig {
+            id: requested_lsp_id.to_string(),
+            command: catalog.command,
+            args: catalog.args,
+            env: std::collections::BTreeMap::new(),
+            initialization_options: std::collections::BTreeMap::new(),
+        });
     }
 
-    Ok(())
+    Err(anyhow!(
+        "no command found for lsp id '{requested_lsp_id}'. add a [[lsp]] entry or install the server"
+    ))
 }
 
 async fn bootstrap_lsp_session(
     runtime: &lspee_lsp::LspRuntime,
     project_root: &Path,
-    resolved: &lspee_config::ResolvedConfig,
+    lsp: &lspee_config::LspConfig,
 ) -> Result<Value> {
     let mut params = json!({
         "processId": null,
@@ -617,8 +620,8 @@ async fn bootstrap_lsp_session(
         params["rootUri"] = Value::String(root_uri.to_string());
     }
 
-    if !resolved.merged.lsp.initialization_options.is_empty() {
-        let options = serde_json::to_value(&resolved.merged.lsp.initialization_options)?;
+    if !lsp.initialization_options.is_empty() {
+        let options = serde_json::to_value(&lsp.initialization_options)?;
         params["initializationOptions"] = options;
     }
 

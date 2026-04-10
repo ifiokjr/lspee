@@ -232,13 +232,11 @@ mod tests {
     fn project_override_can_change_command_and_add_extension() {
         let project_config = unique_temp_file("override");
         let config = r#"
-[lsp]
+[[lsp]]
 id = "rust-analyzer"
 command = "custom-ra"
 args = ["--stdio"]
-
-[lsp.initialization_options]
-language_extension_foo = true
+initialization_options = { language_extension_foo = true }
 "#;
 
         fs::write(&project_config, config).expect("should write temp project config");

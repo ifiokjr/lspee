@@ -11,7 +11,7 @@ Actions:
 
 1. run `lspee doctor`
 2. check `lspee lsps --file <file> --output json`
-3. set `[lsp]` override in `lspee.toml`
+3. set `[[lsp]]` override in `lspee.toml`
 
 ## `failed to connect to daemon socket`
 

@@ -283,16 +283,6 @@ fn ensure_lsp_array(doc: &mut DocumentMut) -> &mut ArrayOfTables {
         doc.insert("lsp", Item::ArrayOfTables(ArrayOfTables::new()));
     }
 
-    // If lsp is a regular table (old single format), convert to array.
-    if doc.get("lsp").is_some_and(|v| v.is_table()) {
-        let old_table = doc.remove("lsp").expect("lsp should exist");
-        let mut array = ArrayOfTables::new();
-        if let Item::Table(t) = old_table {
-            array.push(t);
-        }
-        doc.insert("lsp", Item::ArrayOfTables(array));
-    }
-
     doc["lsp"]
         .as_array_of_tables_mut()
         .expect("lsp should be an array of tables")
@@ -539,22 +529,6 @@ command = "taplo"
         assert!(!content.contains("taplo"));
 
         let _ = fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn ensure_lsp_array_converts_single_table() {
-        let initial = r#"[lsp]
-id = "rust-analyzer"
-command = "rust-analyzer"
-"#;
-        let mut doc: DocumentMut = initial.parse().unwrap();
-        let array = ensure_lsp_array(&mut doc);
-
-        assert_eq!(array.len(), 1);
-        assert_eq!(
-            array.get(0).unwrap().get("id").unwrap().as_str(),
-            Some("rust-analyzer")
-        );
     }
 
     #[test]

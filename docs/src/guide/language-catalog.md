@@ -21,12 +21,12 @@ lspee lsps --file src/main.rs --output json
 
 ## Override behavior
 
-You can override command/args through layered config (`config.toml` / `lspee.toml`) via `[lsp]`.
+You can override command/args through layered config (`config.toml` / `lspee.toml`) via `[[lsp]]`.
 
 Example:
 
 ```toml
-[lsp]
+[[lsp]]
 id = "rust-analyzer"
 command = "/opt/bin/rust-analyzer"
 args = []

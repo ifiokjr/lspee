@@ -18,7 +18,7 @@ For full user-facing docs, see the mdBook pages:
 
 ## Override path (implemented)
 
-Layered config can override one selected LSP entry via `[lsp]` in:
+Layered config can override LSP entries via `[[lsp]]` in:
 
 1. `~/.config/lspee/config.toml`
 2. `<project_root>/lspee.toml`
@@ -26,7 +26,7 @@ Layered config can override one selected LSP entry via `[lsp]` in:
 Example:
 
 ```toml
-[lsp]
+[[lsp]]
 id = "rust-analyzer"
 command = "/opt/custom/bin/rust-analyzer"
 args = []

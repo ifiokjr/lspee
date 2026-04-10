@@ -30,12 +30,12 @@ Registry defaults are loaded first, then overlays are attempted from:
 1. `~/.config/lspee/config.toml`
 2. `<file-parent>/lspee.toml`
 
-Current override hook uses `[lsp]` fields from layered config to replace command/args for a matching `lsp.id`.
+Current override hook uses `[[lsp]]` fields from layered config to replace command/args for a matching `lsp.id`.
 
 Example:
 
 ```toml
-[lsp]
+[[lsp]]
 id = "rust-analyzer"
 command = "/opt/custom/bin/rust-analyzer"
 args = []

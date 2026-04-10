@@ -43,11 +43,11 @@ Any change in root path or merged config produces a distinct hash.
 
 Current top-level keys:
 
-- `lsp.id`
-- `lsp.command`
-- `lsp.args`
-- `lsp.env`
-- `lsp.initialization_options`
+- `[[lsp]].id`
+- `[[lsp]].command`
+- `[[lsp]].args`
+- `[[lsp]].env`
+- `[[lsp]].initialization_options`
 - `root_markers`
 - `workspace_mode`
 - `transport_flags`
@@ -55,7 +55,7 @@ Current top-level keys:
 ## Example
 
 ```toml
-[lsp]
+[[lsp]]
 id = "rust-analyzer"
 command = "rust-analyzer"
 args = []

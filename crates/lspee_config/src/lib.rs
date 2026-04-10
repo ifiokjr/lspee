@@ -103,30 +103,13 @@ pub struct LspConfig {
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct PartialConfig {
-    #[serde(default, deserialize_with = "deserialize_lsp_entries")]
+    #[serde(default)]
     pub lsp: Vec<PartialLspConfig>,
     pub root_markers: Option<Vec<String>>,
     pub workspace_mode: Option<String>,
     pub transport_flags: Option<BTreeMap<String, String>>,
     pub memory: Option<PartialMemoryConfig>,
     pub session: Option<PartialSessionConfig>,
-}
-
-fn deserialize_lsp_entries<'de, D>(deserializer: D) -> Result<Vec<PartialLspConfig>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum LspField {
-        Single(PartialLspConfig),
-        Multiple(Vec<PartialLspConfig>),
-    }
-
-    Ok(match LspField::deserialize(deserializer)? {
-        LspField::Single(single) => vec![single],
-        LspField::Multiple(multiple) => multiple,
-    })
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -300,20 +283,6 @@ fn apply_partial(merged: &mut EffectiveConfig, partial: PartialConfig) {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn parse_single_lsp_table_format() {
-        let toml_str = r#"
-[lsp]
-id = "rust-analyzer"
-command = "rust-analyzer"
-args = []
-"#;
-        let partial: PartialConfig = toml::from_str(toml_str).expect("should parse single [lsp]");
-        assert_eq!(partial.lsp.len(), 1);
-        assert_eq!(partial.lsp[0].id.as_deref(), Some("rust-analyzer"));
-        assert_eq!(partial.lsp[0].command.as_deref(), Some("rust-analyzer"));
-    }
 
     #[test]
     fn parse_multiple_lsp_array_format() {

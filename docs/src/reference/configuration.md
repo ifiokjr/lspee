@@ -12,7 +12,7 @@
 workspace_mode = "single"
 root_markers = [".git", "Cargo.toml"]
 
-[lsp]
+[[lsp]]
 id = "rust-analyzer"
 command = "rust-analyzer"
 args = []

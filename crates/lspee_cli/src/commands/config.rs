@@ -200,7 +200,10 @@ fn run_remove_lsp(cmd: RemoveLspCommand) -> anyhow::Result<()> {
     let original_len = lsp_array.len();
     let mut idx = 0;
     while idx < lsp_array.len() {
-        if lsp_array.get(idx).and_then(|t| t.get("id")).and_then(|v| v.as_str())
+        if lsp_array
+            .get(idx)
+            .and_then(|t| t.get("id"))
+            .and_then(|v| v.as_str())
             == Some(&cmd.id)
         {
             lsp_array.remove(idx);
@@ -231,9 +234,7 @@ fn run_set(cmd: SetCommand) -> anyhow::Result<()> {
             let table = doc[*section]
                 .or_insert(toml_edit::Item::Table(Table::new()))
                 .as_table_mut()
-                .ok_or_else(|| {
-                    anyhow::anyhow!("'{section}' is not a table in lspee.toml")
-                })?;
+                .ok_or_else(|| anyhow::anyhow!("'{section}' is not a table in lspee.toml"))?;
             table.insert(key, toml_edit::value(value));
         }
         [key] => {
@@ -322,18 +323,14 @@ fn generate_init_template(project_root: &Path) -> String {
     if project_root.join("Cargo.toml").exists() {
         lsps.push(("rust-analyzer", "rust-analyzer", Vec::<&str>::new()));
     }
-    if project_root.join("package.json").exists()
-        || project_root.join("tsconfig.json").exists()
-    {
+    if project_root.join("package.json").exists() || project_root.join("tsconfig.json").exists() {
         lsps.push((
             "typescript-language-server",
             "typescript-language-server",
             vec!["--stdio"],
         ));
     }
-    if project_root.join("pyproject.toml").exists()
-        || project_root.join("setup.py").exists()
-    {
+    if project_root.join("pyproject.toml").exists() || project_root.join("setup.py").exists() {
         lsps.push(("pyright", "pyright-langserver", vec!["--stdio"]));
     }
     if project_root.join("go.mod").exists() {
@@ -361,8 +358,7 @@ fn generate_init_template(project_root: &Path) -> String {
             if args.is_empty() {
                 output.push_str("args = []\n");
             } else {
-                let args_str: Vec<String> =
-                    args.iter().map(|a| format!("\"{a}\"")).collect();
+                let args_str: Vec<String> = args.iter().map(|a| format!("\"{a}\"")).collect();
                 output.push_str(&format!("args = [{}]\n", args_str.join(", ")));
             }
             output.push('\n');
@@ -375,4 +371,305 @@ fn generate_init_template(project_root: &Path) -> String {
     );
 
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("lspee-config-test-{name}-{nanos}"));
+        fs::create_dir_all(&dir).unwrap();
+        fs::canonicalize(&dir).unwrap()
+    }
+
+    #[test]
+    fn init_template_detects_rust_project() {
+        let dir = temp_dir("init-rust");
+        fs::write(dir.join("Cargo.toml"), "[package]\nname = \"test\"").unwrap();
+
+        let template = generate_init_template(&dir);
+        assert!(template.contains("rust-analyzer"));
+        assert!(template.contains("[[lsp]]"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn init_template_detects_typescript_project() {
+        let dir = temp_dir("init-ts");
+        fs::write(dir.join("package.json"), "{}").unwrap();
+
+        let template = generate_init_template(&dir);
+        assert!(template.contains("typescript-language-server"));
+        assert!(template.contains("--stdio"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn init_template_detects_python_project() {
+        let dir = temp_dir("init-py");
+        fs::write(dir.join("pyproject.toml"), "[project]\nname = \"test\"").unwrap();
+
+        let template = generate_init_template(&dir);
+        assert!(template.contains("pyright"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn init_template_detects_go_project() {
+        let dir = temp_dir("init-go");
+        fs::write(dir.join("go.mod"), "module test").unwrap();
+
+        let template = generate_init_template(&dir);
+        assert!(template.contains("gopls"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn init_template_shows_placeholder_for_unknown_project() {
+        let dir = temp_dir("init-empty");
+        let template = generate_init_template(&dir);
+        assert!(template.contains("No project markers detected"));
+        assert!(template.contains("# [[lsp]]"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_lsp_to_empty_config() {
+        let dir = temp_dir("add-empty");
+        let config_path = dir.join("lspee.toml");
+
+        let mut doc = DocumentMut::new();
+        let lsp_array = ensure_lsp_array(&mut doc);
+        let mut table = Table::new();
+        table.insert("id", toml_edit::value("taplo"));
+        table.insert("command", toml_edit::value("taplo"));
+        table.insert(
+            "args",
+            toml_edit::value(to_toml_array(&["lsp".into(), "stdio".into()])),
+        );
+        lsp_array.push(table);
+
+        fs::write(&config_path, doc.to_string()).unwrap();
+
+        let content = fs::read_to_string(&config_path).unwrap();
+        assert!(content.contains("taplo"));
+        assert!(content.contains("[[lsp]]"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn add_lsp_updates_existing_entry() {
+        let dir = temp_dir("add-update");
+        let config_path = dir.join("lspee.toml");
+
+        let initial = r#"[[lsp]]
+id = "taplo"
+command = "old-taplo"
+args = []
+"#;
+        fs::write(&config_path, initial).unwrap();
+
+        let mut doc = load_doc(&config_path).unwrap();
+        let lsp_array = ensure_lsp_array(&mut doc);
+
+        for entry in lsp_array.iter_mut() {
+            if entry.get("id").and_then(|v| v.as_str()) == Some("taplo") {
+                entry["command"] = toml_edit::value("new-taplo");
+            }
+        }
+
+        fs::write(&config_path, doc.to_string()).unwrap();
+
+        let content = fs::read_to_string(&config_path).unwrap();
+        assert!(content.contains("new-taplo"));
+        assert!(!content.contains("old-taplo"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn remove_lsp_from_config() {
+        let dir = temp_dir("remove");
+        let config_path = dir.join("lspee.toml");
+
+        let initial = r#"[[lsp]]
+id = "rust-analyzer"
+command = "rust-analyzer"
+
+[[lsp]]
+id = "taplo"
+command = "taplo"
+"#;
+        fs::write(&config_path, initial).unwrap();
+
+        let mut doc = load_doc(&config_path).unwrap();
+        let lsp_array = doc["lsp"].as_array_of_tables_mut().unwrap();
+
+        let mut idx = 0;
+        while idx < lsp_array.len() {
+            if lsp_array
+                .get(idx)
+                .and_then(|t| t.get("id"))
+                .and_then(|v| v.as_str())
+                == Some("taplo")
+            {
+                lsp_array.remove(idx);
+            } else {
+                idx += 1;
+            }
+        }
+
+        fs::write(&config_path, doc.to_string()).unwrap();
+
+        let content = fs::read_to_string(&config_path).unwrap();
+        assert!(content.contains("rust-analyzer"));
+        assert!(!content.contains("taplo"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn ensure_lsp_array_converts_single_table() {
+        let initial = r#"[lsp]
+id = "rust-analyzer"
+command = "rust-analyzer"
+"#;
+        let mut doc: DocumentMut = initial.parse().unwrap();
+        let array = ensure_lsp_array(&mut doc);
+
+        assert_eq!(array.len(), 1);
+        assert_eq!(
+            array.get(0).unwrap().get("id").unwrap().as_str(),
+            Some("rust-analyzer")
+        );
+    }
+
+    #[test]
+    fn parse_toml_value_integers() {
+        match parse_toml_value("42") {
+            TomlValue::Integer(v) => assert_eq!(v.into_value(), 42),
+            _ => panic!("expected integer"),
+        }
+    }
+
+    #[test]
+    fn parse_toml_value_booleans() {
+        match parse_toml_value("true") {
+            TomlValue::Boolean(v) => assert!(v.into_value()),
+            _ => panic!("expected boolean"),
+        }
+    }
+
+    #[test]
+    fn parse_toml_value_strings() {
+        match parse_toml_value("hello") {
+            TomlValue::String(v) => assert_eq!(v.into_value(), "hello"),
+            _ => panic!("expected string"),
+        }
+    }
+
+    #[test]
+    fn set_value_in_section() {
+        let dir = temp_dir("set");
+        let config_path = dir.join("lspee.toml");
+        fs::write(&config_path, "[session]\nidle_ttl_secs = 300\n").unwrap();
+
+        let mut doc = load_doc(&config_path).unwrap();
+        let table = doc["session"].as_table_mut().unwrap();
+        table.insert("idle_ttl_secs", toml_edit::value(600));
+        fs::write(&config_path, doc.to_string()).unwrap();
+
+        let content = fs::read_to_string(&config_path).unwrap();
+        assert!(content.contains("600"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn run_init_creates_file() {
+        let dir = temp_dir("run-init");
+
+        let result = run_init(InitCommand {
+            root: Some(dir.clone()),
+            force: false,
+        });
+        assert!(result.is_ok());
+        assert!(dir.join("lspee.toml").exists());
+
+        // Second call without force should fail.
+        let result = run_init(InitCommand {
+            root: Some(dir.clone()),
+            force: false,
+        });
+        assert!(result.is_err());
+
+        // With force should succeed.
+        let result = run_init(InitCommand {
+            root: Some(dir.clone()),
+            force: true,
+        });
+        assert!(result.is_ok());
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn run_add_lsp_and_remove_lsp() {
+        let dir = temp_dir("run-add-remove");
+        fs::write(dir.join("lspee.toml"), "").unwrap();
+
+        run_add_lsp(AddLspCommand {
+            id: "taplo".to_string(),
+            command: "taplo".to_string(),
+            args: Some(vec!["lsp".to_string(), "stdio".to_string()]),
+            root: Some(dir.clone()),
+        })
+        .expect("add-lsp should succeed");
+
+        let content = fs::read_to_string(dir.join("lspee.toml")).unwrap();
+        assert!(content.contains("taplo"));
+
+        run_remove_lsp(RemoveLspCommand {
+            id: "taplo".to_string(),
+            root: Some(dir.clone()),
+        })
+        .expect("remove-lsp should succeed");
+
+        let content = fs::read_to_string(dir.join("lspee.toml")).unwrap();
+        assert!(!content.contains("taplo"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn run_set_creates_section() {
+        let dir = temp_dir("run-set");
+        fs::write(dir.join("lspee.toml"), "").unwrap();
+
+        run_set(SetCommand {
+            key: "session.idle_ttl_secs".to_string(),
+            value: "600".to_string(),
+            root: Some(dir.clone()),
+        })
+        .expect("set should succeed");
+
+        let content = fs::read_to_string(dir.join("lspee.toml")).unwrap();
+        assert!(content.contains("[session]"));
+        assert!(content.contains("600"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
 }

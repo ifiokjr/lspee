@@ -36,8 +36,7 @@ pub struct Daemon {
 impl Daemon {
     #[must_use]
     pub fn new(root: PathBuf, config: lspee_config::ResolvedConfig) -> Self {
-        let idle_ttl =
-            std::time::Duration::from_secs(config.merged.session.idle_ttl_secs);
+        let idle_ttl = std::time::Duration::from_secs(config.merged.session.idle_ttl_secs);
         Self {
             root,
             config,

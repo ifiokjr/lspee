@@ -1,0 +1,37 @@
+{
+  "name": "@ifi/lspee-skill",
+  "version": "0.0.0",
+  "description": "Installable agent skill for lspee — teaches AI agents how to use LSP servers for code intelligence",
+  "license": "MIT OR Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ifiokjr/lspee.git",
+    "directory": "npm/skill"
+  },
+  "files": [
+    "bin",
+    "SKILL.md",
+    "REFERENCE.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "lspee-skill": "bin/lspee-skill.js"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "lspee",
+    "lsp",
+    "language-server",
+    "skill",
+    "agent",
+    "ai",
+    "code-intelligence"
+  ]
+}

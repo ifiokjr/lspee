@@ -94,7 +94,11 @@ async fn run_async(cmd: CapabilitiesCommand) -> anyhow::Result<()> {
     // Release the lease immediately — we only needed the initialize_result.
     let release_result = release_lease(&mut writer, &mut lines, &lease_id).await;
     if let Err(error) = release_result {
-        tracing::warn!(?error, lease_id, "failed to release lease after capabilities query");
+        tracing::warn!(
+            ?error,
+            lease_id,
+            "failed to release lease after capabilities query"
+        );
     }
 
     match cmd.output {
@@ -260,4 +264,128 @@ async fn release_lease(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn extract_capabilities_from_full_initialize_result() {
+        let init = json!({
+            "jsonrpc": "2.0",
+            "id": "lspee-initialize",
+            "result": {
+                "capabilities": {
+                    "hoverProvider": true,
+                    "completionProvider": {"triggerCharacters": ["."]},
+                    "definitionProvider": true,
+                    "referencesProvider": true,
+                    "renameProvider": {"prepareProvider": true},
+                    "documentFormattingProvider": false,
+                    "workspaceSymbolProvider": true
+                },
+                "serverInfo": {
+                    "name": "rust-analyzer",
+                    "version": "0.4.0"
+                }
+            }
+        });
+
+        let caps = extract_capabilities("rust-analyzer", Some(&init));
+
+        assert_eq!(caps["lsp_id"], "rust-analyzer");
+        assert_eq!(caps["methods"]["textDocument/hover"], true);
+        assert_eq!(caps["methods"]["textDocument/completion"], true);
+        assert_eq!(caps["methods"]["textDocument/definition"], true);
+        assert_eq!(caps["methods"]["textDocument/references"], true);
+        assert_eq!(caps["methods"]["textDocument/rename"], true);
+        assert_eq!(caps["methods"]["textDocument/formatting"], false);
+        assert_eq!(caps["methods"]["workspace/symbol"], true);
+        assert_eq!(caps["server_info"]["name"], "rust-analyzer");
+        assert_eq!(caps["server_info"]["version"], "0.4.0");
+    }
+
+    #[test]
+    fn extract_capabilities_from_flat_format() {
+        let init = json!({
+            "capabilities": {
+                "hoverProvider": true,
+                "definitionProvider": false
+            }
+        });
+
+        let caps = extract_capabilities("test-lsp", Some(&init));
+        assert_eq!(caps["methods"]["textDocument/hover"], true);
+        assert_eq!(caps["methods"]["textDocument/definition"], false);
+    }
+
+    #[test]
+    fn extract_capabilities_handles_missing_result() {
+        let caps = extract_capabilities("test-lsp", None);
+        assert_eq!(caps["lsp_id"], "test-lsp");
+        assert!(
+            caps["error"]
+                .as_str()
+                .unwrap()
+                .contains("no initialize_result")
+        );
+    }
+
+    #[test]
+    fn extract_capabilities_handles_missing_capabilities_field() {
+        let init = json!({ "result": { "serverInfo": { "name": "test" } } });
+        let caps = extract_capabilities("test-lsp", Some(&init));
+        assert!(
+            caps["error"]
+                .as_str()
+                .unwrap()
+                .contains("no capabilities field")
+        );
+    }
+
+    #[test]
+    fn has_capability_returns_false_for_missing_key() {
+        let caps = json!({"hoverProvider": true});
+        assert!(!has_capability(&caps, "completionProvider"));
+    }
+
+    #[test]
+    fn has_capability_returns_false_for_null() {
+        let caps = json!({"hoverProvider": null});
+        assert!(!has_capability(&caps, "hoverProvider"));
+    }
+
+    #[test]
+    fn has_capability_returns_false_for_bool_false() {
+        let caps = json!({"hoverProvider": false});
+        assert!(!has_capability(&caps, "hoverProvider"));
+    }
+
+    #[test]
+    fn has_capability_returns_true_for_bool_true() {
+        let caps = json!({"hoverProvider": true});
+        assert!(has_capability(&caps, "hoverProvider"));
+    }
+
+    #[test]
+    fn has_capability_returns_true_for_object() {
+        let caps = json!({"completionProvider": {"triggerCharacters": ["."]}});
+        assert!(has_capability(&caps, "completionProvider"));
+    }
+
+    #[test]
+    fn extract_all_28_capability_fields() {
+        let caps = extract_capabilities("empty-lsp", Some(&json!({"capabilities": {}})));
+        let methods = caps["methods"].as_object().unwrap();
+        assert_eq!(
+            methods.len(),
+            29,
+            "should map exactly 29 LSP capability fields"
+        );
+        for (_, val) in methods {
+            assert_eq!(val, false, "empty capabilities should all be false");
+        }
+    }
 }

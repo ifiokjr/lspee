@@ -75,7 +75,8 @@ impl Daemon {
     }
 
     pub async fn run(&self) -> Result<()> {
-        let configured_lsps: Vec<&str> = self.config.merged.lsps.keys().map(String::as_str).collect();
+        let configured_lsps: Vec<&str> =
+            self.config.merged.lsps.keys().map(String::as_str).collect();
         tracing::info!(
             root = ?self.root,
             configured_lsps = ?configured_lsps,
@@ -297,8 +298,7 @@ async fn dispatch_attach(
                 let resolved =
                     lspee_config::resolve(Some(&spawn_root)).map_err(anyhow::Error::from)?;
 
-                let lsp_config =
-                    resolve_lsp_config(&resolved, &spawn_root, &spawn_lsp_id)?;
+                let lsp_config = resolve_lsp_config(&resolved, &spawn_root, &spawn_lsp_id)?;
 
                 let transport = Arc::new(lspee_lsp::LspTransport::new(spawn_root.clone()));
                 let runtime = Arc::new(transport.spawn(&lsp_config).await?);

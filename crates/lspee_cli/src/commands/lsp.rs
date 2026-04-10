@@ -21,12 +21,7 @@ pub struct LspCommand {
 
 pub fn run(cmd: LspCommand) -> anyhow::Result<()> {
     let resolved = resolve(cmd.project_root.as_deref())?;
-    let lsp_ids: Vec<&str> = resolved
-        .merged
-        .lsps
-        .keys()
-        .map(String::as_str)
-        .collect();
+    let lsp_ids: Vec<&str> = resolved.merged.lsps.keys().map(String::as_str).collect();
 
     match cmd.output {
         LspOutput::Human => {

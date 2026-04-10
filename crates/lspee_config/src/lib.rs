@@ -296,3 +296,217 @@ fn apply_partial(merged: &mut EffectiveConfig, partial: PartialConfig) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_single_lsp_table_format() {
+        let toml_str = r#"
+[lsp]
+id = "rust-analyzer"
+command = "rust-analyzer"
+args = []
+"#;
+        let partial: PartialConfig = toml::from_str(toml_str).expect("should parse single [lsp]");
+        assert_eq!(partial.lsp.len(), 1);
+        assert_eq!(partial.lsp[0].id.as_deref(), Some("rust-analyzer"));
+        assert_eq!(partial.lsp[0].command.as_deref(), Some("rust-analyzer"));
+    }
+
+    #[test]
+    fn parse_multiple_lsp_array_format() {
+        let toml_str = r#"
+[[lsp]]
+id = "rust-analyzer"
+command = "rust-analyzer"
+args = []
+
+[[lsp]]
+id = "taplo"
+command = "taplo"
+args = ["lsp", "stdio"]
+"#;
+        let partial: PartialConfig = toml::from_str(toml_str).expect("should parse [[lsp]] array");
+        assert_eq!(partial.lsp.len(), 2);
+        assert_eq!(partial.lsp[0].id.as_deref(), Some("rust-analyzer"));
+        assert_eq!(partial.lsp[1].id.as_deref(), Some("taplo"));
+        assert_eq!(
+            partial.lsp[1].args.as_deref(),
+            Some(vec!["lsp".to_string(), "stdio".to_string()].as_slice())
+        );
+    }
+
+    #[test]
+    fn parse_config_without_lsp_section() {
+        let toml_str = r#"
+workspace_mode = "single"
+
+[session]
+idle_ttl_secs = 600
+"#;
+        let partial: PartialConfig = toml::from_str(toml_str).expect("should parse without lsp");
+        assert!(partial.lsp.is_empty());
+        assert_eq!(partial.session.unwrap().idle_ttl_secs, Some(600));
+    }
+
+    #[test]
+    fn apply_partial_merges_multiple_lsps_by_id() {
+        let mut merged = default_config();
+
+        let partial = PartialConfig {
+            lsp: vec![
+                PartialLspConfig {
+                    id: Some("rust-analyzer".to_string()),
+                    command: Some("rust-analyzer".to_string()),
+                    args: None,
+                    env: None,
+                    initialization_options: None,
+                },
+                PartialLspConfig {
+                    id: Some("taplo".to_string()),
+                    command: Some("taplo".to_string()),
+                    args: Some(vec!["lsp".to_string(), "stdio".to_string()]),
+                    env: None,
+                    initialization_options: None,
+                },
+            ],
+            root_markers: None,
+            workspace_mode: None,
+            transport_flags: None,
+            memory: None,
+            session: None,
+        };
+
+        apply_partial(&mut merged, partial);
+
+        assert_eq!(merged.lsps.len(), 2);
+        assert_eq!(merged.lsps["rust-analyzer"].command, "rust-analyzer");
+        assert_eq!(merged.lsps["taplo"].command, "taplo");
+        assert_eq!(
+            merged.lsps["taplo"].args,
+            vec!["lsp".to_string(), "stdio".to_string()]
+        );
+    }
+
+    #[test]
+    fn apply_partial_overwrites_same_id() {
+        let mut merged = default_config();
+
+        let first = PartialConfig {
+            lsp: vec![PartialLspConfig {
+                id: Some("ra".to_string()),
+                command: Some("old-command".to_string()),
+                args: Some(vec!["--old".to_string()]),
+                env: None,
+                initialization_options: None,
+            }],
+            ..Default::default()
+        };
+        apply_partial(&mut merged, first);
+        assert_eq!(merged.lsps["ra"].command, "old-command");
+
+        let second = PartialConfig {
+            lsp: vec![PartialLspConfig {
+                id: Some("ra".to_string()),
+                command: Some("new-command".to_string()),
+                args: None,
+                env: None,
+                initialization_options: None,
+            }],
+            ..Default::default()
+        };
+        apply_partial(&mut merged, second);
+        assert_eq!(merged.lsps["ra"].command, "new-command");
+        // args from first layer are preserved since second didn't set them
+        assert_eq!(merged.lsps["ra"].args, vec!["--old".to_string()]);
+    }
+
+    #[test]
+    fn lsp_config_lookup_by_id() {
+        let mut config = default_config();
+        config.lsps.insert(
+            "rust-analyzer".to_string(),
+            LspConfig {
+                id: "rust-analyzer".to_string(),
+                command: "rust-analyzer".to_string(),
+                ..Default::default()
+            },
+        );
+
+        assert!(config.lsp_config("rust-analyzer").is_some());
+        assert!(config.lsp_config("nonexistent").is_none());
+    }
+
+    #[test]
+    fn default_config_has_empty_lsps() {
+        let config = default_config();
+        assert!(config.lsps.is_empty());
+        assert_eq!(config.root_markers, vec![".git".to_string()]);
+        assert_eq!(config.session.idle_ttl_secs, 300);
+    }
+
+    #[test]
+    fn config_hash_is_deterministic() {
+        let root = PathBuf::from("/tmp/test-hash-determinism");
+        let config = default_config();
+        let hash1 = hash_identity(&root, &config);
+        let hash2 = hash_identity(&root, &config);
+        assert_eq!(hash1, hash2);
+    }
+
+    #[test]
+    fn config_hash_changes_with_lsp_entries() {
+        let root = PathBuf::from("/tmp/test-hash-change");
+        let config1 = default_config();
+        let mut config2 = default_config();
+        config2.lsps.insert(
+            "ra".to_string(),
+            LspConfig {
+                id: "ra".to_string(),
+                command: "rust-analyzer".to_string(),
+                ..Default::default()
+            },
+        );
+        assert_ne!(
+            hash_identity(&root, &config1),
+            hash_identity(&root, &config2)
+        );
+    }
+
+    #[test]
+    fn resolve_from_temp_dir_with_multi_lsp_config() {
+        let dir = std::env::temp_dir().join(format!(
+            "lspee-test-resolve-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let config = r#"
+[[lsp]]
+id = "rust-analyzer"
+command = "rust-analyzer"
+
+[[lsp]]
+id = "taplo"
+command = "taplo"
+args = ["lsp", "stdio"]
+"#;
+        std::fs::write(dir.join("lspee.toml"), config).unwrap();
+
+        let resolved = resolve(Some(&dir)).expect("should resolve");
+        assert_eq!(resolved.merged.lsps.len(), 2);
+        assert!(resolved.merged.lsp_config("rust-analyzer").is_some());
+        assert!(resolved.merged.lsp_config("taplo").is_some());
+        assert_eq!(
+            resolved.merged.lsp_config("taplo").unwrap().args,
+            vec!["lsp".to_string(), "stdio".to_string()]
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}

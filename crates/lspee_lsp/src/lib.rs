@@ -175,9 +175,9 @@ impl LspTransport {
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
 
-        let mut child = cmd.spawn().with_context(|| {
-            format!("failed to spawn lsp command: {}", lsp.command)
-        })?;
+        let mut child = cmd
+            .spawn()
+            .with_context(|| format!("failed to spawn lsp command: {}", lsp.command))?;
 
         let stdin = child
             .stdin

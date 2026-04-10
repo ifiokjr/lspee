@@ -24,6 +24,7 @@ use tokio::{
     net::{UnixListener, UnixStream},
     sync::watch,
 };
+use tracing::instrument;
 use url::Url;
 
 pub struct Daemon {
@@ -255,6 +256,7 @@ async fn dispatch_control_request(
     }
 }
 
+#[instrument(skip_all, fields(request_id = ?id))]
 async fn dispatch_attach(
     id: Option<String>,
     payload: Value,
@@ -394,6 +396,7 @@ async fn dispatch_attach(
     }
 }
 
+#[instrument(skip_all, fields(request_id = ?id))]
 async fn dispatch_release(
     id: Option<String>,
     payload: Value,
@@ -433,6 +436,7 @@ async fn dispatch_release(
     }
 }
 
+#[instrument(skip_all, fields(request_id = ?id))]
 async fn dispatch_call(
     id: Option<String>,
     payload: Value,
@@ -479,6 +483,7 @@ async fn dispatch_call(
     }
 }
 
+#[instrument(skip_all)]
 async fn dispatch_stats(
     id: Option<String>,
     registry: &SessionRegistry,
@@ -512,6 +517,7 @@ async fn dispatch_stats(
     }
 }
 
+#[instrument(skip_all)]
 async fn dispatch_shutdown(
     id: Option<String>,
     payload: Value,
@@ -556,6 +562,7 @@ fn preferred_stream_mode(capabilities: Option<&AttachCapabilities>) -> StreamMod
     }
 }
 
+#[instrument(skip(resolved), fields(lsp_id = %requested_lsp_id))]
 fn resolve_lsp_config(
     resolved: &lspee_config::ResolvedConfig,
     project_root: &Path,
@@ -608,6 +615,7 @@ fn resolve_lsp_config(
     ))
 }
 
+#[instrument(skip(runtime), fields(lsp_id = %lsp.id))]
 async fn bootstrap_lsp_session(
     runtime: &lspee_lsp::LspRuntime,
     project_root: &Path,

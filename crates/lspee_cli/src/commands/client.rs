@@ -62,17 +62,32 @@ pub async fn connect(project_root: &Path, auto_start: bool) -> Result<UnixStream
 
 fn spawn_daemon(project_root: &Path) -> Result<()> {
     let current_exe = std::env::current_exe().context("failed to resolve current executable")?;
+    let log_dir = project_root.join(".lspee");
+    let _ = std::fs::create_dir_all(&log_dir);
+    let log_file = log_dir.join("daemon.log");
 
-    std::process::Command::new(current_exe)
-        .arg("serve")
+    let mut cmd = std::process::Command::new(current_exe);
+    cmd.arg("serve")
         .arg("--project-root")
         .arg(project_root)
+        .arg("--log-file")
+        .arg(&log_file)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn()
+        .stderr(Stdio::null());
+
+    // Forward log settings if set by the user.
+    if let Ok(log_filter) = std::env::var("LSPEE_LOG") {
+        cmd.env("LSPEE_LOG", log_filter);
+    }
+    if let Ok(log_format) = std::env::var("LSPEE_LOG_FORMAT") {
+        cmd.env("LSPEE_LOG_FORMAT", log_format);
+    }
+
+    cmd.spawn()
         .context("failed to spawn background daemon process")?;
 
+    tracing::debug!(log_file = %log_file.display(), "auto-started daemon");
     Ok(())
 }
 

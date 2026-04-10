@@ -8,6 +8,7 @@ use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, Command};
 use tokio::sync::{Mutex, broadcast, mpsc};
 use tokio::time::{Duration, timeout};
+use tracing::instrument;
 
 #[derive(Debug, Clone)]
 pub struct LspMessage {
@@ -76,6 +77,7 @@ impl LspRuntime {
         Ok(rss_kb.map(|kb| kb * 1024))
     }
 
+    #[instrument(skip(self))]
     pub async fn shutdown(&self) -> Result<()> {
         let _ = self
             .send(json!({"jsonrpc":"2.0","id":"lspee-shutdown","method":"shutdown","params":null}))
@@ -115,6 +117,7 @@ impl LspRuntime {
         Ok(())
     }
 
+    #[instrument(skip_all, fields(request_id = ?request.get("id")))]
     pub async fn call(&self, request: Value) -> Result<Value> {
         let expected_id = request
             .get("id")
@@ -164,6 +167,7 @@ impl LspTransport {
         Ok(())
     }
 
+    #[instrument(skip(self), fields(lsp_id = %lsp.id, command = %lsp.command))]
     pub async fn spawn(&self, lsp: &lspee_config::LspConfig) -> Result<LspRuntime> {
         self.prepare(lsp)?;
 

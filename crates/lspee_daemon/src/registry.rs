@@ -12,6 +12,7 @@ use anyhow::{Result, anyhow};
 use lspee_protocol::{ClientKind, StreamErrorPayload};
 use serde_json::Value;
 use tokio::sync::{Mutex, Notify, RwLock, broadcast};
+use tracing::instrument;
 
 const DEFAULT_IDLE_TTL: Duration = Duration::from_secs(300);
 
@@ -197,6 +198,7 @@ impl SessionRegistry {
         format!("lease_{id}")
     }
 
+    #[instrument(skip(self, spawn), fields(lsp_id = %key.lsp_id))]
     pub async fn acquire_or_spawn<F, Fut>(
         &self,
         key: SessionKey,
@@ -325,6 +327,7 @@ impl SessionRegistry {
         self.session_handle(&key).await
     }
 
+    #[instrument(skip(self))]
     pub async fn release_by_lease_id(&self, lease_id: &str) -> Option<usize> {
         let key = self.leases.write().await.remove(lease_id)?.key;
         let mut sessions = self.sessions.write().await;
@@ -344,6 +347,7 @@ impl SessionRegistry {
         }
     }
 
+    #[instrument(skip(self, request))]
     pub async fn call_by_lease_id(&self, lease_id: &str, request: Value) -> Result<Option<Value>> {
         let key = {
             let leases = self.leases.read().await;

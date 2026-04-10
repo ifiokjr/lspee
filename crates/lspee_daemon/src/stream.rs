@@ -10,6 +10,7 @@ use tokio::{
 
 use crate::{SessionHandle, SessionRegistry};
 
+#[tracing::instrument(skip(handle, registry))]
 pub async fn spawn_dedicated_stream_endpoint(
     project_root: &Path,
     lease_id: &str,

@@ -1,0 +1,602 @@
+# Helix-inspired default language server catalog for lspee.
+# Contains 100 commonly used LSP server defaults with command and extension mappings.
+
+[lsp."rust-analyzer"]
+command = "rust-analyzer"
+args = []
+file_extensions = ["rs"]
+root_markers = ["Cargo.toml", "rust-project.json", ".git"]
+
+[lsp."typescript-language-server"]
+command = "typescript-language-server"
+args = ["--stdio"]
+file_extensions = ["ts", "tsx", "js", "jsx", "mjs", "cjs"]
+root_markers = ["package.json", "tsconfig.json", "jsconfig.json", ".git"]
+
+[lsp."vtsls"]
+command = "vtsls"
+args = ["--stdio"]
+file_extensions = ["ts", "tsx", "js", "jsx", "mjs", "cjs"]
+root_markers = ["package.json", "tsconfig.json", "jsconfig.json", ".git"]
+
+[lsp."eslint"]
+command = "vscode-eslint-language-server"
+args = ["--stdio"]
+file_extensions = ["js", "jsx", "mjs", "cjs", "ts", "tsx"]
+root_markers = ["package.json", ".eslintrc", "eslint.config.js", ".git"]
+
+[lsp."deno"]
+command = "deno"
+args = ["lsp"]
+file_extensions = ["ts", "tsx", "js", "jsx"]
+root_markers = ["deno.json", "deno.jsonc", ".git"]
+
+[lsp."biome"]
+command = "biome"
+args = ["lsp-proxy"]
+file_extensions = ["js", "jsx", "ts", "tsx", "json", "jsonc"]
+root_markers = ["biome.json", "biome.jsonc", ".git"]
+
+[lsp."pyright"]
+command = "pyright-langserver"
+args = ["--stdio"]
+file_extensions = ["py"]
+root_markers = ["pyproject.toml", "setup.py", "requirements.txt", ".git"]
+
+[lsp."basedpyright"]
+command = "basedpyright-langserver"
+args = ["--stdio"]
+file_extensions = ["py"]
+root_markers = ["pyproject.toml", "setup.py", "requirements.txt", ".git"]
+
+[lsp."pylsp"]
+command = "pylsp"
+args = []
+file_extensions = ["py"]
+root_markers = ["pyproject.toml", "setup.py", "requirements.txt", ".git"]
+
+[lsp."ruff"]
+command = "ruff"
+args = ["server"]
+file_extensions = ["py"]
+root_markers = ["pyproject.toml", "ruff.toml", ".git"]
+
+[lsp."jedi-language-server"]
+command = "jedi-language-server"
+args = []
+file_extensions = ["py"]
+root_markers = ["pyproject.toml", "setup.py", "requirements.txt", ".git"]
+
+[lsp."gopls"]
+command = "gopls"
+args = []
+file_extensions = ["go"]
+root_markers = ["go.mod", "go.work", ".git"]
+
+[lsp."clangd"]
+command = "clangd"
+args = []
+file_extensions = ["c", "h", "cc", "cpp", "cxx", "hpp"]
+root_markers = ["compile_commands.json", ".clangd", ".git"]
+
+[lsp."ccls"]
+command = "ccls"
+args = []
+file_extensions = ["c", "h", "cc", "cpp", "cxx", "hpp"]
+root_markers = ["compile_commands.json", ".ccls", ".git"]
+
+[lsp."cmake-language-server"]
+command = "cmake-language-server"
+args = []
+file_extensions = ["cmake"]
+root_markers = ["CMakeLists.txt", ".git"]
+
+[lsp."bash-language-server"]
+command = "bash-language-server"
+args = ["start"]
+file_extensions = ["sh", "bash", "zsh"]
+root_markers = [".git"]
+
+[lsp."dockerfile-language-server"]
+command = "docker-langserver"
+args = ["--stdio"]
+file_extensions = ["dockerfile", "containerfile"]
+root_markers = ["Dockerfile", "Containerfile", ".git"]
+
+[lsp."docker-compose-language-service"]
+command = "docker-compose-langserver"
+args = ["--stdio"]
+file_extensions = ["yaml", "yml"]
+root_markers = ["docker-compose.yml", "compose.yml", ".git"]
+
+[lsp."yaml-language-server"]
+command = "yaml-language-server"
+args = ["--stdio"]
+file_extensions = ["yaml", "yml"]
+root_markers = [".git"]
+
+[lsp."json-language-server"]
+command = "vscode-json-language-server"
+args = ["--stdio"]
+file_extensions = ["json", "jsonc"]
+root_markers = ["package.json", ".git"]
+
+[lsp."taplo"]
+command = "taplo"
+args = ["lsp", "stdio"]
+file_extensions = ["toml"]
+root_markers = ["Cargo.toml", "pyproject.toml", ".git"]
+
+[lsp."marksman"]
+command = "marksman"
+args = ["server"]
+file_extensions = ["md", "markdown"]
+root_markers = [".git"]
+
+[lsp."markdown-oxide"]
+command = "markdown-oxide"
+args = []
+file_extensions = ["md", "markdown"]
+root_markers = [".git"]
+
+[lsp."harper-ls"]
+command = "harper-ls"
+args = []
+file_extensions = ["md", "txt", "rst"]
+root_markers = [".git"]
+
+[lsp."html-language-server"]
+command = "vscode-html-language-server"
+args = ["--stdio"]
+file_extensions = ["html", "htm"]
+root_markers = [".git"]
+
+[lsp."css-language-server"]
+command = "vscode-css-language-server"
+args = ["--stdio"]
+file_extensions = ["css", "scss", "less"]
+root_markers = [".git"]
+
+[lsp."tailwindcss-language-server"]
+command = "tailwindcss-language-server"
+args = ["--stdio"]
+file_extensions = ["html", "css", "scss", "js", "ts", "jsx", "tsx"]
+root_markers = ["tailwind.config.js", "tailwind.config.ts", ".git"]
+
+[lsp."svelte-language-server"]
+command = "svelteserver"
+args = ["--stdio"]
+file_extensions = ["svelte"]
+root_markers = ["package.json", "svelte.config.js", ".git"]
+
+[lsp."vue-language-server"]
+command = "vue-language-server"
+args = ["--stdio"]
+file_extensions = ["vue"]
+root_markers = ["package.json", "vite.config.ts", ".git"]
+
+[lsp."astro-language-server"]
+command = "astro-ls"
+args = ["--stdio"]
+file_extensions = ["astro"]
+root_markers = ["package.json", "astro.config.mjs", ".git"]
+
+[lsp."emmet-language-server"]
+command = "emmet-language-server"
+args = ["--stdio"]
+file_extensions = ["html", "css", "scss", "less", "jsx", "tsx"]
+root_markers = [".git"]
+
+[lsp."graphql-language-service"]
+command = "graphql-lsp"
+args = ["server", "-m", "stream"]
+file_extensions = ["graphql", "gql"]
+root_markers = ["package.json", ".graphqlrc", ".git"]
+
+[lsp."prisma-language-server"]
+command = "prisma-language-server"
+args = ["--stdio"]
+file_extensions = ["prisma"]
+root_markers = ["schema.prisma", ".git"]
+
+[lsp."lemminx"]
+command = "lemminx"
+args = []
+file_extensions = ["xml", "xsd", "xsl"]
+root_markers = ["pom.xml", ".git"]
+
+[lsp."kotlin-language-server"]
+command = "kotlin-language-server"
+args = []
+file_extensions = ["kt", "kts"]
+root_markers = ["settings.gradle", "settings.gradle.kts", ".git"]
+
+[lsp."jdtls"]
+command = "jdtls"
+args = []
+file_extensions = ["java"]
+root_markers = ["pom.xml", "build.gradle", ".git"]
+
+[lsp."metals"]
+command = "metals"
+args = []
+file_extensions = ["scala", "sbt"]
+root_markers = ["build.sbt", "project/build.properties", ".git"]
+
+[lsp."omnisharp"]
+command = "OmniSharp"
+args = []
+file_extensions = ["cs"]
+root_markers = ["*.sln", "*.csproj", ".git"]
+
+[lsp."csharp-ls"]
+command = "csharp-ls"
+args = []
+file_extensions = ["cs"]
+root_markers = ["*.sln", "*.csproj", ".git"]
+
+[lsp."fsautocomplete"]
+command = "fsautocomplete"
+args = []
+file_extensions = ["fs", "fsi", "fsx"]
+root_markers = ["*.fsproj", "*.sln", ".git"]
+
+[lsp."lua-language-server"]
+command = "lua-language-server"
+args = []
+file_extensions = ["lua"]
+root_markers = [".luarc.json", "stylua.toml", ".git"]
+
+[lsp."intelephense"]
+command = "intelephense"
+args = ["--stdio"]
+file_extensions = ["php"]
+root_markers = ["composer.json", ".git"]
+
+[lsp."phpactor"]
+command = "phpactor"
+args = ["language-server"]
+file_extensions = ["php"]
+root_markers = ["composer.json", ".git"]
+
+[lsp."julia-language-server"]
+command = "julia"
+args = ["--startup-file=no", "--history-file=no", "-e", "using LanguageServer; runserver()"]
+file_extensions = ["jl"]
+root_markers = ["Project.toml", "Manifest.toml", ".git"]
+
+[lsp."elixir-ls"]
+command = "elixir-ls"
+args = []
+file_extensions = ["ex", "exs"]
+root_markers = ["mix.exs", ".git"]
+
+[lsp."lexical"]
+command = "lexical"
+args = ["server"]
+file_extensions = ["ex", "exs"]
+root_markers = ["mix.exs", ".git"]
+
+[lsp."erlang-ls"]
+command = "erlang_ls"
+args = []
+file_extensions = ["erl", "hrl"]
+root_markers = ["rebar.config", "erlang.mk", ".git"]
+
+[lsp."gleam"]
+command = "gleam"
+args = ["lsp"]
+file_extensions = ["gleam"]
+root_markers = ["gleam.toml", ".git"]
+
+[lsp."haskell-language-server"]
+command = "haskell-language-server-wrapper"
+args = ["--lsp"]
+file_extensions = ["hs", "lhs"]
+root_markers = ["stack.yaml", "cabal.project", ".git"]
+
+[lsp."ocamllsp"]
+command = "ocamllsp"
+args = []
+file_extensions = ["ml", "mli", "mll", "mly"]
+root_markers = ["dune-project", ".git"]
+
+[lsp."zls"]
+command = "zls"
+args = []
+file_extensions = ["zig", "zon"]
+root_markers = ["build.zig", ".git"]
+
+[lsp."sourcekit-lsp"]
+command = "sourcekit-lsp"
+args = []
+file_extensions = ["swift"]
+root_markers = ["Package.swift", ".git"]
+
+[lsp."dart-analysis-server"]
+command = "dart"
+args = ["language-server", "--protocol=lsp"]
+file_extensions = ["dart"]
+root_markers = ["pubspec.yaml", ".git"]
+
+[lsp."r-language-server"]
+command = "R"
+args = ["--slave", "-e", "languageserver::run()"]
+file_extensions = ["r"]
+root_markers = ["DESCRIPTION", "renv.lock", ".git"]
+
+[lsp."texlab"]
+command = "texlab"
+args = []
+file_extensions = ["tex", "sty", "cls"]
+root_markers = [".latexmkrc", ".git"]
+
+[lsp."ltex-ls"]
+command = "ltex-ls"
+args = []
+file_extensions = ["md", "txt", "tex", "rst"]
+root_markers = [".git"]
+
+[lsp."vale-ls"]
+command = "vale-ls"
+args = []
+file_extensions = ["md", "txt", "rst"]
+root_markers = [".vale.ini", ".git"]
+
+[lsp."vim-language-server"]
+command = "vim-language-server"
+args = ["--stdio"]
+file_extensions = ["vim"]
+root_markers = [".git"]
+
+[lsp."powershell-editor-services"]
+command = "powershell-editor-services"
+args = []
+file_extensions = ["ps1", "psm1", "psd1"]
+root_markers = [".git"]
+
+[lsp."helm-ls"]
+command = "helm_ls"
+args = ["serve"]
+file_extensions = ["tpl", "helm"]
+root_markers = ["Chart.yaml", ".git"]
+
+[lsp."ansible-language-server"]
+command = "ansible-language-server"
+args = ["--stdio"]
+file_extensions = ["yaml", "yml"]
+root_markers = ["ansible.cfg", ".git"]
+
+[lsp."terraform-ls"]
+command = "terraform-ls"
+args = ["serve"]
+file_extensions = ["tf", "tfvars", "hcl"]
+root_markers = ["main.tf", ".terraform", ".git"]
+
+[lsp."tflint"]
+command = "tflint"
+args = ["--langserver"]
+file_extensions = ["tf", "tfvars"]
+root_markers = [".tflint.hcl", ".git"]
+
+[lsp."bicep-lsp"]
+command = "bicep-langserver"
+args = []
+file_extensions = ["bicep"]
+root_markers = ["main.bicep", ".git"]
+
+[lsp."sqls"]
+command = "sqls"
+args = []
+file_extensions = ["sql"]
+root_markers = ["sqls.yml", ".git"]
+
+[lsp."regols"]
+command = "regols"
+args = []
+file_extensions = ["rego"]
+root_markers = ["policy", ".git"]
+
+[lsp."nickel-lang-lsp"]
+command = "nls"
+args = []
+file_extensions = ["ncl"]
+root_markers = ["Nickel.toml", ".git"]
+
+[lsp."nixd"]
+command = "nixd"
+args = []
+file_extensions = ["nix"]
+root_markers = ["flake.nix", "shell.nix", ".git"]
+
+[lsp."nil"]
+command = "nil"
+args = []
+file_extensions = ["nix"]
+root_markers = ["flake.nix", "shell.nix", ".git"]
+
+[lsp."nix-lsp"]
+command = "rnix-lsp"
+args = []
+file_extensions = ["nix"]
+root_markers = ["flake.nix", "shell.nix", ".git"]
+
+[lsp."dhall-lsp-server"]
+command = "dhall-lsp-server"
+args = []
+file_extensions = ["dhall"]
+root_markers = [".git"]
+
+[lsp."htmx-lsp"]
+command = "htmx-lsp"
+args = []
+file_extensions = ["html"]
+root_markers = [".git"]
+
+[lsp."solidity-ls"]
+command = "solidity-language-server"
+args = ["--stdio"]
+file_extensions = ["sol"]
+root_markers = ["foundry.toml", "hardhat.config.js", ".git"]
+
+[lsp."gradle-language-server"]
+command = "gradle-language-server"
+args = []
+file_extensions = ["gradle", "kts", "groovy"]
+root_markers = ["settings.gradle", "settings.gradle.kts", ".git"]
+
+[lsp."angular-language-server"]
+command = "ngserver"
+args = ["--stdio"]
+file_extensions = ["ts", "html"]
+root_markers = ["angular.json", "package.json", ".git"]
+
+[lsp."hurl-lsp"]
+command = "hurl-lsp"
+args = []
+file_extensions = ["hurl"]
+root_markers = [".git"]
+
+[lsp."awk-language-server"]
+command = "awk-language-server"
+args = []
+file_extensions = ["awk"]
+root_markers = [".git"]
+
+[lsp."fish-lsp"]
+command = "fish-lsp"
+args = []
+file_extensions = ["fish"]
+root_markers = [".git"]
+
+[lsp."nushell"]
+command = "nu"
+args = ["--lsp"]
+file_extensions = ["nu"]
+root_markers = [".git"]
+
+[lsp."glsl-analyzer"]
+command = "glsl_analyzer"
+args = []
+file_extensions = ["glsl", "vert", "frag", "geom", "comp"]
+root_markers = [".git"]
+
+[lsp."wgsl-analyzer"]
+command = "wgsl-analyzer"
+args = []
+file_extensions = ["wgsl"]
+root_markers = ["Cargo.toml", ".git"]
+
+[lsp."verible-verilog-ls"]
+command = "verible-verilog-ls"
+args = []
+file_extensions = ["v", "vh", "sv", "svh"]
+root_markers = [".git"]
+
+[lsp."svlangserver"]
+command = "svlangserver"
+args = []
+file_extensions = ["sv", "svh", "v", "vh"]
+root_markers = [".git"]
+
+[lsp."fortls"]
+command = "fortls"
+args = []
+file_extensions = ["f", "f90", "f95", "f03", "f08"]
+root_markers = [".git"]
+
+[lsp."asm-lsp"]
+command = "asm-lsp"
+args = []
+file_extensions = ["asm", "s"]
+root_markers = [".git"]
+
+[lsp."typst-lsp"]
+command = "typst-lsp"
+args = []
+file_extensions = ["typ"]
+root_markers = [".git"]
+
+[lsp."tinymist"]
+command = "tinymist"
+args = []
+file_extensions = ["typ"]
+root_markers = [".git"]
+
+[lsp."qml-lsp"]
+command = "qmlls"
+args = []
+file_extensions = ["qml", "qmltypes"]
+root_markers = [".git"]
+
+[lsp."pasls"]
+command = "pasls"
+args = []
+file_extensions = ["pas", "pp"]
+root_markers = [".git"]
+
+[lsp."vhdl-ls"]
+command = "vhdl_ls"
+args = []
+file_extensions = ["vhd", "vhdl"]
+root_markers = [".git"]
+
+[lsp."protols"]
+command = "protols"
+args = []
+file_extensions = ["proto"]
+root_markers = ["buf.yaml", ".git"]
+
+[lsp."protobuf-language-server"]
+command = "protobuf-language-server"
+args = []
+file_extensions = ["proto"]
+root_markers = ["buf.yaml", ".git"]
+
+[lsp."buf-language-server"]
+command = "bufls"
+args = []
+file_extensions = ["proto"]
+root_markers = ["buf.yaml", ".git"]
+
+[lsp."cue-langserver"]
+command = "cue"
+args = ["lsp"]
+file_extensions = ["cue"]
+root_markers = ["cue.mod", ".git"]
+
+[lsp."clojure-lsp"]
+command = "clojure-lsp"
+args = []
+file_extensions = ["clj", "cljs", "cljc", "edn"]
+root_markers = ["deps.edn", "project.clj", ".git"]
+
+[lsp."fennel-language-server"]
+command = "fennel-ls"
+args = []
+file_extensions = ["fnl"]
+root_markers = [".git"]
+
+[lsp."racket-langserver"]
+command = "racket-langserver"
+args = []
+file_extensions = ["rkt", "rktd"]
+root_markers = ["info.rkt", ".git"]
+
+[lsp."perlnavigator"]
+command = "perlnavigator"
+args = []
+file_extensions = ["pl", "pm", "t"]
+root_markers = ["cpanfile", ".git"]
+
+[lsp."ruby-lsp"]
+command = "ruby-lsp"
+args = []
+file_extensions = ["rb", "rake", "gemspec"]
+root_markers = ["Gemfile", ".git"]
+
+[lsp."solargraph"]
+command = "solargraph"
+args = ["stdio"]
+file_extensions = ["rb", "rake", "gemspec"]
+root_markers = ["Gemfile", ".git"]

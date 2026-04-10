@@ -1,0 +1,26 @@
+# Project-level lspee configuration (merged after user config).
+
+workspace_mode = "single"
+root_markers = [".git", "Cargo.toml"]
+
+[lsp]
+id = "rust-analyzer"
+command = "rust-analyzer"
+args = []
+
+[lsp.env]
+RUST_LOG = "error"
+
+[transport_flags]
+request_timeout_ms = "5000"
+
+[session]
+# How long an idle session (no active leases) stays alive before eviction.
+# Default: 300 (5 minutes). Set higher for agent workflows with longer gaps.
+idle_ttl_secs = 300
+
+[memory]
+# Example limits. Set to your preference or remove to disable.
+max_session_mb = 2048
+max_total_mb = 8192
+check_interval_ms = 1000

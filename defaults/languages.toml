@@ -1,0 +1,132 @@
+version = 1
+
+[selection]
+strategy = "first-healthy"
+
+[[lsp]]
+id = "rust-analyzer"
+command = "rust-analyzer"
+args = []
+health_command = ["rust-analyzer", "--version"]
+
+[[lsp]]
+id = "typescript-language-server"
+command = "typescript-language-server"
+args = ["--stdio"]
+health_command = ["typescript-language-server", "--version"]
+
+[[lsp]]
+id = "vtsls"
+command = "vtsls"
+args = ["--stdio"]
+health_command = ["vtsls", "--version"]
+
+[[lsp]]
+id = "pyright"
+command = "pyright-langserver"
+args = ["--stdio"]
+health_command = ["pyright", "--version"]
+
+[[lsp]]
+id = "ruff"
+command = "ruff"
+args = ["server"]
+health_command = ["ruff", "--version"]
+
+[[lsp]]
+id = "gopls"
+command = "gopls"
+args = []
+health_command = ["gopls", "version"]
+
+[[lsp]]
+id = "lua-language-server"
+command = "lua-language-server"
+args = []
+health_command = ["lua-language-server", "--version"]
+
+[[lsp]]
+id = "taplo"
+command = "taplo"
+args = ["lsp", "stdio"]
+health_command = ["taplo", "--version"]
+
+[[language]]
+id = "rust"
+file_types = ["rs"]
+root_markers = ["Cargo.toml", "rust-project.json", ".git"]
+
+[[language.servers]]
+id = "rust-analyzer"
+priority = 100
+
+[[language]]
+id = "typescript"
+file_types = ["ts", "tsx"]
+root_markers = ["package.json", "tsconfig.json", ".git"]
+
+[[language.servers]]
+id = "typescript-language-server"
+priority = 120
+when = { path_exists = "tsconfig.json" }
+
+[[language.servers]]
+id = "vtsls"
+priority = 110
+when = { path_exists_any = ["package.json", "jsconfig.json"] }
+
+[[language]]
+id = "javascript"
+file_types = ["js", "jsx", "mjs", "cjs"]
+root_markers = ["package.json", "jsconfig.json", ".git"]
+
+[[language.servers]]
+id = "vtsls"
+priority = 120
+when = { path_exists = "package.json" }
+
+[[language.servers]]
+id = "typescript-language-server"
+priority = 100
+when = { path_exists_any = ["package.json", "jsconfig.json"] }
+
+[[language]]
+id = "python"
+file_types = ["py"]
+root_markers = ["pyproject.toml", "setup.py", "requirements.txt", ".git"]
+
+[[language.servers]]
+id = "pyright"
+priority = 120
+
+[[language.servers]]
+id = "ruff"
+priority = 90
+when = { path_exists = "pyproject.toml" }
+
+[[language]]
+id = "go"
+file_types = ["go"]
+root_markers = ["go.work", "go.mod", ".git"]
+
+[[language.servers]]
+id = "gopls"
+priority = 100
+
+[[language]]
+id = "lua"
+file_types = ["lua"]
+root_markers = [".luarc.json", ".luarc.jsonc", ".git"]
+
+[[language.servers]]
+id = "lua-language-server"
+priority = 100
+
+[[language]]
+id = "toml"
+file_types = ["toml"]
+root_markers = [".git"]
+
+[[language.servers]]
+id = "taplo"
+priority = 100

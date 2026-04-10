@@ -1,0 +1,49 @@
+[workspace]
+members = [
+  "crates/lspee_config",
+  "crates/lspee_cli",
+  "crates/lspee_daemon",
+  "crates/lspee_lsp",
+  "crates/lspee_protocol",
+  "crates/lspee",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ifiokjr/lspee"
+authors = ["Ifiok Jr. <ifiokjr@users.noreply.github.com>"]
+
+[workspace.dependencies]
+anyhow = "1.0"
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.44", features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "io-std", "net", "fs", "process"] }
+clap = { version = "4.5", features = ["derive"] }
+lsp-types = "0.97"
+tower-lsp = "0.20"
+sha2 = "0.10"
+toml = "0.8"
+url = "2.5"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+missing_docs = "warn"
+rust_2018_idioms = { level = "deny", priority = -1 }
+unreachable_pub = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+multiple_crate_versions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"

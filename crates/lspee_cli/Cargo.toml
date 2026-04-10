@@ -1,0 +1,22 @@
+[package]
+name = "lspee_cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "lspee"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+lspee_daemon = { path = "../lspee_daemon" }
+lspee_config = { path = "../lspee_config" }
+lspee_lsp = { path = "../lspee_lsp" }
+serde_json.workspace = true

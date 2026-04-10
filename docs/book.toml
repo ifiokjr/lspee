@@ -1,0 +1,9 @@
+[book]
+authors = ["Ifiok Jr."]
+language = "en"
+src = "src"
+title = "lspee Book"
+
+[output.html]
+default-theme = "ayu"
+preferred-dark-theme = "ayu"

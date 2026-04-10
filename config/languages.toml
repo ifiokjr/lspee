@@ -1,0 +1,184 @@
+version = 1
+
+[meta]
+name = "lspee default language catalog"
+inspired_by = "helix languages.toml"
+description = "Default language-to-LSP mapping with conditional activation and override-safe metadata."
+
+[selection]
+# How lspee chooses one server when multiple candidates are healthy.
+# - first-healthy: sort by priority desc, pick first passing health and condition checks.
+strategy = "first-healthy"
+
+[precedence]
+# Merge order (lowest -> highest)
+order = ["built-in", "user", "project", "runtime"]
+
+# Replacement semantics:
+# - lsp entries merge by id
+# - language entries merge by id
+# - language.servers entries merge by id inside each language
+# - when a higher layer defines the same id, fields overwrite lower-layer fields
+# - a higher layer can disable an inherited server with enabled = false
+merge_keys = ["lsp.id", "language.id", "language.servers.id"]
+
+[query]
+# Enables fast "which LSPs apply to this file now?" diagnostics/inspection output.
+explain_applicability = true
+include_non_matching_candidates = true
+
+[[lsp]]
+id = "rust-analyzer"
+command = "rust-analyzer"
+args = []
+health_command = ["rust-analyzer", "--version"]
+when_to_use = "Default for Rust projects using Cargo or rust-project.json."
+
+[[lsp]]
+id = "typescript-language-server"
+command = "typescript-language-server"
+args = ["--stdio"]
+health_command = ["typescript-language-server", "--version"]
+when_to_use = "TypeScript/JavaScript projects that prefer typescript-language-server behavior."
+
+[[lsp]]
+id = "vtsls"
+command = "vtsls"
+args = ["--stdio"]
+health_command = ["vtsls", "--version"]
+when_to_use = "TS/JS projects that prefer vtsls performance/features; often in larger monorepos."
+
+[[lsp]]
+id = "pyright"
+command = "pyright-langserver"
+args = ["--stdio"]
+health_command = ["pyright", "--version"]
+when_to_use = "Primary Python type-checking and language intelligence."
+
+[[lsp]]
+id = "ruff"
+command = "ruff"
+args = ["server"]
+health_command = ["ruff", "--version"]
+when_to_use = "Python lint/format-focused server; pairs well with Pyright."
+
+[[lsp]]
+id = "gopls"
+command = "gopls"
+args = []
+health_command = ["gopls", "version"]
+when_to_use = "Default Go language server for modules/workspaces."
+
+[[lsp]]
+id = "lua-language-server"
+command = "lua-language-server"
+args = []
+health_command = ["lua-language-server", "--version"]
+when_to_use = "Default for Lua projects with optional .luarc configuration."
+
+[[lsp]]
+id = "taplo"
+command = "taplo"
+args = ["lsp", "stdio"]
+health_command = ["taplo", "--version"]
+when_to_use = "TOML editing, schema, and formatting support."
+
+[[language]]
+id = "rust"
+file_types = ["rs"]
+root_markers = ["Cargo.toml", "rust-project.json", ".git"]
+
+[[language.servers]]
+id = "rust-analyzer"
+priority = 100
+enabled = true
+why = "Best default for Rust analysis and Cargo integration."
+
+[[language]]
+id = "typescript"
+file_types = ["ts", "tsx"]
+root_markers = ["package.json", "tsconfig.json", ".git"]
+
+[[language.servers]]
+id = "typescript-language-server"
+priority = 120
+enabled = true
+why = "Preferred when tsconfig is explicitly present."
+when = { path_exists = "tsconfig.json" }
+
+[[language.servers]]
+id = "vtsls"
+priority = 110
+enabled = true
+why = "Fallback/alternative when package or jsconfig indicates JS/TS workspace."
+when = { path_exists_any = ["package.json", "jsconfig.json"] }
+
+[[language]]
+id = "javascript"
+file_types = ["js", "jsx", "mjs", "cjs"]
+root_markers = ["package.json", "jsconfig.json", ".git"]
+
+[[language.servers]]
+id = "vtsls"
+priority = 120
+enabled = true
+why = "Good JS default in package-managed repositories."
+when = { path_exists = "package.json" }
+
+[[language.servers]]
+id = "typescript-language-server"
+priority = 100
+enabled = true
+why = "Alternative JS language service where vtsls is unavailable."
+when = { path_exists_any = ["package.json", "jsconfig.json"] }
+
+[[language]]
+id = "python"
+file_types = ["py"]
+root_markers = ["pyproject.toml", "setup.py", "requirements.txt", ".git"]
+
+[[language.servers]]
+id = "pyright"
+priority = 120
+enabled = true
+why = "Primary Python semantic engine."
+
+[[language.servers]]
+id = "ruff"
+priority = 90
+enabled = true
+why = "Adds fast lint/format diagnostics where pyproject exists."
+when = { path_exists = "pyproject.toml" }
+
+[[language]]
+id = "go"
+file_types = ["go"]
+root_markers = ["go.work", "go.mod", ".git"]
+
+[[language.servers]]
+id = "gopls"
+priority = 100
+enabled = true
+why = "Canonical Go server for modules and workspaces."
+
+[[language]]
+id = "lua"
+file_types = ["lua"]
+root_markers = [".luarc.json", ".luarc.jsonc", ".git"]
+
+[[language.servers]]
+id = "lua-language-server"
+priority = 100
+enabled = true
+why = "Standard Lua language intelligence server."
+
+[[language]]
+id = "toml"
+file_types = ["toml"]
+root_markers = [".git"]
+
+[[language.servers]]
+id = "taplo"
+priority = 100
+enabled = true
+why = "Default TOML schema/format support."

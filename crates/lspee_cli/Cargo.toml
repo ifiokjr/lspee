@@ -20,3 +20,5 @@ lspee_daemon = { path = "../lspee_daemon" }
 lspee_config = { path = "../lspee_config" }
 lspee_lsp = { path = "../lspee_lsp" }
 serde_json.workspace = true
+toml.workspace = true
+toml_edit.workspace = true

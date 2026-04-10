@@ -30,6 +30,7 @@ lsp-types = "0.97"
 tower-lsp = "0.20"
 sha2 = "0.10"
 toml = "0.8"
+toml_edit = "0.22"
 url = "2.5"
 
 [workspace.lints.rust]

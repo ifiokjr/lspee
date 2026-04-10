@@ -1,5 +1,6 @@
 pub mod call;
 mod client;
+pub mod config;
 pub mod doctor;
 pub mod lsp;
 pub mod lsps;
@@ -31,6 +32,8 @@ pub enum Command {
     Lsps(lsps::LspsCommand),
     /// Run health checks for environment and integration readiness.
     Doctor(doctor::DoctorCommand),
+    /// Manage project configuration (show, init, add-lsp, remove-lsp, set).
+    Config(config::ConfigCommand),
 }
 
 pub fn run(command: Command) -> anyhow::Result<()> {
@@ -44,5 +47,6 @@ pub fn run(command: Command) -> anyhow::Result<()> {
         Command::Restart(cmd) => restart::run(cmd),
         Command::Lsps(cmd) => lsps::run(cmd),
         Command::Doctor(cmd) => doctor::run(cmd),
+        Command::Config(cmd) => config::run(cmd),
     }
 }

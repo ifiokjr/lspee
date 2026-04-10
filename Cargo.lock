@@ -375,6 +375,8 @@ dependencies = [
  "lspee_lsp",
  "serde_json",
  "tokio",
+ "toml",
+ "toml_edit",
  "tracing",
  "tracing-subscriber",
 ]

@@ -1,6 +1,6 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use tokio::{sync::oneshot, task::JoinHandle, time};
+use tokio::{sync::oneshot, sync::watch, task::JoinHandle, time};
 
 use crate::registry::SessionRegistry;
 
@@ -12,7 +12,11 @@ pub struct EvictionLoop {
 }
 
 impl EvictionLoop {
-    pub fn start(registry: SessionRegistry) -> Self {
+    pub fn start(
+        registry: SessionRegistry,
+        daemon_idle_ttl: Option<Duration>,
+        shutdown_tx: watch::Sender<bool>,
+    ) -> Self {
         let (stop, mut stop_rx) = oneshot::channel();
         let idle_ttl = registry.idle_ttl();
 
@@ -21,9 +25,13 @@ impl EvictionLoop {
                 let mut ticker = time::interval(EVICTION_TICK);
                 ticker.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
 
+                // Track when the daemon last had at least one session.
+                let mut daemon_idle_since: Option<Instant> = Some(Instant::now());
+
                 loop {
                     tokio::select! {
                             _ = ticker.tick() => {
+                                // --- per-session idle eviction ---
                                 let candidates = registry.idle_candidates().await;
                                 for candidate in candidates {
                                     tracing::info!(lsp_id = %candidate.key.lsp_id, idle_ttl_secs = idle_ttl.as_secs(), "evicting idle LSP session");
@@ -38,6 +46,27 @@ impl EvictionLoop {
                                 registry.remove(&candidate.key).await;
                                 registry.increment_idle_gc().await;
                             }
+
+                                // --- daemon-level auto-shutdown ---
+                                if let Some(ttl) = daemon_idle_ttl {
+                                    let session_count = registry.session_count().await;
+                                    if session_count == 0 {
+                                        let idle_since = daemon_idle_since.get_or_insert_with(Instant::now);
+                                        let idle_for = idle_since.elapsed();
+                                        if idle_for >= ttl {
+                                            tracing::info!(
+                                                idle_secs = idle_for.as_secs(),
+                                                ttl_secs = ttl.as_secs(),
+                                                "daemon has no sessions; auto-shutting down"
+                                            );
+                                            let _ = shutdown_tx.send(true);
+                                            break;
+                                        }
+                                    } else {
+                                        // Reset idle timer when sessions exist.
+                                        daemon_idle_since = None;
+                                    }
+                                }
                         }
                         _ = &mut stop_rx => {
                             break;

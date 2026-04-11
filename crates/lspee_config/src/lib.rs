@@ -77,12 +77,18 @@ impl Default for MemoryConfig {
 pub struct SessionConfig {
     #[serde(default = "default_idle_ttl_secs")]
     pub idle_ttl_secs: u64,
+    /// How long the daemon stays alive with zero sessions before
+    /// shutting itself down. `None` means the daemon runs forever.
+    /// Default: 1800 (30 minutes).
+    #[serde(default = "default_daemon_idle_ttl_secs")]
+    pub daemon_idle_ttl_secs: Option<u64>,
 }
 
 impl Default for SessionConfig {
     fn default() -> Self {
         Self {
             idle_ttl_secs: default_idle_ttl_secs(),
+            daemon_idle_ttl_secs: default_daemon_idle_ttl_secs(),
         }
     }
 }
@@ -122,6 +128,7 @@ pub struct PartialMemoryConfig {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PartialSessionConfig {
     pub idle_ttl_secs: Option<u64>,
+    pub daemon_idle_ttl_secs: Option<u64>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -217,6 +224,10 @@ fn default_idle_ttl_secs() -> u64 {
     300
 }
 
+fn default_daemon_idle_ttl_secs() -> Option<u64> {
+    Some(1800)
+}
+
 fn default_config() -> EffectiveConfig {
     EffectiveConfig {
         lsps: BTreeMap::new(),
@@ -276,6 +287,9 @@ fn apply_partial(merged: &mut EffectiveConfig, partial: PartialConfig) {
     if let Some(session) = partial.session {
         if let Some(idle_ttl_secs) = session.idle_ttl_secs {
             merged.session.idle_ttl_secs = idle_ttl_secs;
+        }
+        if let Some(daemon_idle_ttl_secs) = session.daemon_idle_ttl_secs {
+            merged.session.daemon_idle_ttl_secs = Some(daemon_idle_ttl_secs);
         }
     }
 }

@@ -22,6 +22,10 @@
 
 - Eviction attempts graceful LSP shutdown, then force-stop fallback.
 
+## Daemon auto-shutdown
+
+{{#include ../includes/daemon-auto-shutdown.md}}
+
 ## Session shutdown on daemon stop
 
 When daemon receives `Shutdown`, it:

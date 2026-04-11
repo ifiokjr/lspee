@@ -3,9 +3,8 @@
 #[cfg(not(unix))]
 compile_error!("lspee currently supports unix-like platforms only (linux/macOS)");
 
-mod commands;
-
 use clap::Parser;
+use lspee_cli::commands;
 
 #[derive(Debug, Parser)]
 #[command(name = "lspee")]

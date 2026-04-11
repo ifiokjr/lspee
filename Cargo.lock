@@ -477,12 +477,14 @@ dependencies = [
  "lspee_daemon",
  "lspee_lsp",
  "lspee_test_helpers",
+ "serde",
  "serde_json",
  "tokio",
  "toml",
  "toml_edit",
  "tracing",
  "tracing-subscriber",
+ "url",
 ]
 
 [[package]]

@@ -648,24 +648,24 @@ fn client_render_error_payload_missing_fields() {
 
 #[test]
 fn client_ensure_not_error_passes_for_non_error() {
-    let envelope = lspee_daemon::ControlEnvelope {
-        v: lspee_daemon::PROTOCOL_VERSION,
-        id: Some("test".to_string()),
-        message_type: "AttachOk".to_string(),
-        payload: serde_json::json!({}),
-    };
-    assert!(lspee_cli::commands::client::ensure_not_error(&envelope).is_ok());
+	let envelope = lspee_daemon::ControlEnvelope {
+		v: lspee_daemon::PROTOCOL_VERSION,
+		id: Some("test".to_string()),
+		message_type: "AttachOk".to_string(),
+		payload: serde_json::json!({}),
+	};
+	assert!(lspee_cli::commands::client::ensure_not_error(&envelope).is_ok());
 }
 
 #[test]
 fn client_ensure_not_error_fails_for_error() {
-    let envelope = lspee_daemon::ControlEnvelope {
-        v: lspee_daemon::PROTOCOL_VERSION,
-        id: Some("test".to_string()),
-        message_type: "Error".to_string(),
-        payload: serde_json::json!({"code": "E_TEST", "message": "fail"}),
-    };
-    assert!(lspee_cli::commands::client::ensure_not_error(&envelope).is_err());
+	let envelope = lspee_daemon::ControlEnvelope {
+		v: lspee_daemon::PROTOCOL_VERSION,
+		id: Some("test".to_string()),
+		message_type: "Error".to_string(),
+		payload: serde_json::json!({"code": "E_TEST", "message": "fail"}),
+	};
+	assert!(lspee_cli::commands::client::ensure_not_error(&envelope).is_err());
 }
 
 // ---------------------------------------------------------------------------
@@ -674,38 +674,38 @@ fn client_ensure_not_error_fails_for_error() {
 
 #[test]
 fn capabilities_command_runs_successfully() {
-    let root = unique_temp_dir("caps-cmd");
-    write_project_config(&root);
+	let root = unique_temp_dir("caps-cmd");
+	write_project_config(&root);
 
-    let daemon_thread = spawn_daemon_thread(&root);
-    wait_for_socket_sync(&root);
+	let daemon_thread = spawn_daemon_thread(&root);
+	wait_for_socket_sync(&root);
 
-    let result = lspee_cli::commands::capabilities::run(
-        lspee_cli::commands::capabilities::CapabilitiesCommand {
-            lsp: "rust-analyzer".to_string(),
-            root: Some(root.clone()),
-            no_start_daemon: false,
-            output: lspee_cli::commands::capabilities::CapabilitiesOutput::Json,
-        },
-    );
-    assert!(result.is_ok());
+	let result = lspee_cli::commands::capabilities::run(
+		lspee_cli::commands::capabilities::CapabilitiesCommand {
+			lsp: "rust-analyzer".to_string(),
+			root: Some(root.clone()),
+			no_start_daemon: false,
+			output: lspee_cli::commands::capabilities::CapabilitiesOutput::Json,
+		},
+	);
+	assert!(result.is_ok());
 
-    let result = lspee_cli::commands::capabilities::run(
-        lspee_cli::commands::capabilities::CapabilitiesCommand {
-            lsp: "rust-analyzer".to_string(),
-            root: Some(root.clone()),
-            no_start_daemon: false,
-            output: lspee_cli::commands::capabilities::CapabilitiesOutput::Human,
-        },
-    );
-    assert!(result.is_ok());
+	let result = lspee_cli::commands::capabilities::run(
+		lspee_cli::commands::capabilities::CapabilitiesCommand {
+			lsp: "rust-analyzer".to_string(),
+			root: Some(root.clone()),
+			no_start_daemon: false,
+			output: lspee_cli::commands::capabilities::CapabilitiesOutput::Human,
+		},
+	);
+	assert!(result.is_ok());
 
-    lspee_cli::commands::stop::run(lspee_cli::commands::stop::StopCommand {
-        project_root: Some(root.clone()),
-    })
-    .unwrap();
-    let _ = daemon_thread.join();
-    let _ = fs::remove_dir_all(&root);
+	lspee_cli::commands::stop::run(lspee_cli::commands::stop::StopCommand {
+		project_root: Some(root.clone()),
+	})
+	.unwrap();
+	let _ = daemon_thread.join();
+	let _ = fs::remove_dir_all(&root);
 }
 
 // ---------------------------------------------------------------------------
@@ -714,26 +714,26 @@ fn capabilities_command_runs_successfully() {
 
 #[test]
 fn restart_command_restarts_daemon() {
-    let root = unique_temp_dir("restart-cmd");
-    write_project_config(&root);
+	let root = unique_temp_dir("restart-cmd");
+	write_project_config(&root);
 
-    let daemon_thread = spawn_daemon_thread(&root);
-    wait_for_socket_sync(&root);
+	let daemon_thread = spawn_daemon_thread(&root);
+	wait_for_socket_sync(&root);
 
-    // Restart creates its own runtime, so call from sync context.
-    // The restart will shut down the existing daemon and start a new one
-    // via auto-start. But since our test daemon won't auto-start from the CLI,
-    // the restart command should at least complete the shutdown part.
-    // We test the shutdown + reconnect flow.
-    let result = lspee_cli::commands::restart::run(lspee_cli::commands::restart::RestartCommand {
-        project_root: Some(root.clone()),
-    });
-    // Restart may fail on reconnect since our test daemon is gone after shutdown,
-    // but the shutdown path is exercised regardless.
-    let _ = result;
+	// Restart creates its own runtime, so call from sync context.
+	// The restart will shut down the existing daemon and start a new one
+	// via auto-start. But since our test daemon won't auto-start from the CLI,
+	// the restart command should at least complete the shutdown part.
+	// We test the shutdown + reconnect flow.
+	let result = lspee_cli::commands::restart::run(lspee_cli::commands::restart::RestartCommand {
+		project_root: Some(root.clone()),
+	});
+	// Restart may fail on reconnect since our test daemon is gone after shutdown,
+	// but the shutdown path is exercised regardless.
+	let _ = result;
 
-    let _ = daemon_thread.join();
-    let _ = fs::remove_dir_all(&root);
+	let _ = daemon_thread.join();
+	let _ = fs::remove_dir_all(&root);
 }
 
 // ---------------------------------------------------------------------------
@@ -742,9 +742,9 @@ fn restart_command_restarts_daemon() {
 
 #[test]
 fn serve_log_format_values() {
-    // Exercise the LogFormat enum variants exist and can be constructed
-    let _human = lspee_cli::commands::serve::LogFormat::Human;
-    let _json = lspee_cli::commands::serve::LogFormat::Json;
+	// Exercise the LogFormat enum variants exist and can be constructed
+	let _human = lspee_cli::commands::serve::LogFormat::Human;
+	let _json = lspee_cli::commands::serve::LogFormat::Json;
 }
 
 // ---------------------------------------------------------------------------
@@ -753,167 +753,167 @@ fn serve_log_format_values() {
 
 #[test]
 fn config_init_then_add_remove_lsp() {
-    let root = unique_temp_dir("config-lifecycle");
+	let root = unique_temp_dir("config-lifecycle");
 
-    // Init
-    lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
-        action: lspee_cli::commands::config::ConfigAction::Init(
-            lspee_cli::commands::config::InitCommand {
-                root: Some(root.clone()),
-                force: false,
-            },
-        ),
-    })
-    .unwrap();
-    assert!(root.join("lspee.toml").exists());
+	// Init
+	lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
+		action: lspee_cli::commands::config::ConfigAction::Init(
+			lspee_cli::commands::config::InitCommand {
+				root: Some(root.clone()),
+				force: false,
+			},
+		),
+	})
+	.unwrap();
+	assert!(root.join("lspee.toml").exists());
 
-    // Add LSP
-    lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
-        action: lspee_cli::commands::config::ConfigAction::AddLsp(
-            lspee_cli::commands::config::AddLspCommand {
-                id: "taplo".to_string(),
-                command: "taplo".to_string(),
-                args: Some(vec!["lsp".to_string(), "stdio".to_string()]),
-                root: Some(root.clone()),
-            },
-        ),
-    })
-    .unwrap();
+	// Add LSP
+	lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
+		action: lspee_cli::commands::config::ConfigAction::AddLsp(
+			lspee_cli::commands::config::AddLspCommand {
+				id: "taplo".to_string(),
+				command: "taplo".to_string(),
+				args: Some(vec!["lsp".to_string(), "stdio".to_string()]),
+				root: Some(root.clone()),
+			},
+		),
+	})
+	.unwrap();
 
-    let content = fs::read_to_string(root.join("lspee.toml")).unwrap();
-    assert!(content.contains("taplo"));
+	let content = fs::read_to_string(root.join("lspee.toml")).unwrap();
+	assert!(content.contains("taplo"));
 
-    // Remove LSP
-    lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
-        action: lspee_cli::commands::config::ConfigAction::RemoveLsp(
-            lspee_cli::commands::config::RemoveLspCommand {
-                id: "taplo".to_string(),
-                root: Some(root.clone()),
-            },
-        ),
-    })
-    .unwrap();
+	// Remove LSP
+	lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
+		action: lspee_cli::commands::config::ConfigAction::RemoveLsp(
+			lspee_cli::commands::config::RemoveLspCommand {
+				id: "taplo".to_string(),
+				root: Some(root.clone()),
+			},
+		),
+	})
+	.unwrap();
 
-    let content = fs::read_to_string(root.join("lspee.toml")).unwrap();
-    assert!(!content.contains("taplo"));
+	let content = fs::read_to_string(root.join("lspee.toml")).unwrap();
+	assert!(!content.contains("taplo"));
 
-    // Set value
-    lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
-        action: lspee_cli::commands::config::ConfigAction::Set(
-            lspee_cli::commands::config::SetCommand {
-                key: "session.idle_ttl_secs".to_string(),
-                value: "900".to_string(),
-                root: Some(root.clone()),
-            },
-        ),
-    })
-    .unwrap();
+	// Set value
+	lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
+		action: lspee_cli::commands::config::ConfigAction::Set(
+			lspee_cli::commands::config::SetCommand {
+				key: "session.idle_ttl_secs".to_string(),
+				value: "900".to_string(),
+				root: Some(root.clone()),
+			},
+		),
+	})
+	.unwrap();
 
-    let content = fs::read_to_string(root.join("lspee.toml")).unwrap();
-    assert!(content.contains("900"));
+	let content = fs::read_to_string(root.join("lspee.toml")).unwrap();
+	assert!(content.contains("900"));
 
-    let _ = fs::remove_dir_all(&root);
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[test]
 fn config_remove_lsp_nonexistent_fails() {
-    let root = unique_temp_dir("config-rm-fail");
-    fs::write(
-        root.join("lspee.toml"),
-        "[[lsp]]\nid = \"rust-analyzer\"\ncommand = \"ra\"\n",
-    )
-    .unwrap();
+	let root = unique_temp_dir("config-rm-fail");
+	fs::write(
+		root.join("lspee.toml"),
+		"[[lsp]]\nid = \"rust-analyzer\"\ncommand = \"ra\"\n",
+	)
+	.unwrap();
 
-    let result = lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
-        action: lspee_cli::commands::config::ConfigAction::RemoveLsp(
-            lspee_cli::commands::config::RemoveLspCommand {
-                id: "nonexistent".to_string(),
-                root: Some(root.clone()),
-            },
-        ),
-    });
-    assert!(result.is_err());
+	let result = lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
+		action: lspee_cli::commands::config::ConfigAction::RemoveLsp(
+			lspee_cli::commands::config::RemoveLspCommand {
+				id: "nonexistent".to_string(),
+				root: Some(root.clone()),
+			},
+		),
+	});
+	assert!(result.is_err());
 
-    let _ = fs::remove_dir_all(&root);
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[test]
 fn config_remove_lsp_no_config_fails() {
-    let root = unique_temp_dir("config-rm-nofile");
+	let root = unique_temp_dir("config-rm-nofile");
 
-    let result = lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
-        action: lspee_cli::commands::config::ConfigAction::RemoveLsp(
-            lspee_cli::commands::config::RemoveLspCommand {
-                id: "anything".to_string(),
-                root: Some(root.clone()),
-            },
-        ),
-    });
-    assert!(result.is_err());
+	let result = lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
+		action: lspee_cli::commands::config::ConfigAction::RemoveLsp(
+			lspee_cli::commands::config::RemoveLspCommand {
+				id: "anything".to_string(),
+				root: Some(root.clone()),
+			},
+		),
+	});
+	assert!(result.is_err());
 
-    let _ = fs::remove_dir_all(&root);
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[test]
 fn config_set_top_level_key() {
-    let root = unique_temp_dir("config-set-top");
-    fs::write(root.join("lspee.toml"), "").unwrap();
+	let root = unique_temp_dir("config-set-top");
+	fs::write(root.join("lspee.toml"), "").unwrap();
 
-    lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
-        action: lspee_cli::commands::config::ConfigAction::Set(
-            lspee_cli::commands::config::SetCommand {
-                key: "workspace_mode".to_string(),
-                value: "multi".to_string(),
-                root: Some(root.clone()),
-            },
-        ),
-    })
-    .unwrap();
+	lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
+		action: lspee_cli::commands::config::ConfigAction::Set(
+			lspee_cli::commands::config::SetCommand {
+				key: "workspace_mode".to_string(),
+				value: "multi".to_string(),
+				root: Some(root.clone()),
+			},
+		),
+	})
+	.unwrap();
 
-    let content = fs::read_to_string(root.join("lspee.toml")).unwrap();
-    assert!(content.contains("multi"));
+	let content = fs::read_to_string(root.join("lspee.toml")).unwrap();
+	assert!(content.contains("multi"));
 
-    let _ = fs::remove_dir_all(&root);
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[test]
 fn config_set_deep_key_fails() {
-    let root = unique_temp_dir("config-set-deep");
-    fs::write(root.join("lspee.toml"), "").unwrap();
+	let root = unique_temp_dir("config-set-deep");
+	fs::write(root.join("lspee.toml"), "").unwrap();
 
-    let result = lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
-        action: lspee_cli::commands::config::ConfigAction::Set(
-            lspee_cli::commands::config::SetCommand {
-                key: "a.b.c".to_string(),
-                value: "x".to_string(),
-                root: Some(root.clone()),
-            },
-        ),
-    });
-    assert!(result.is_err());
+	let result = lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
+		action: lspee_cli::commands::config::ConfigAction::Set(
+			lspee_cli::commands::config::SetCommand {
+				key: "a.b.c".to_string(),
+				value: "x".to_string(),
+				root: Some(root.clone()),
+			},
+		),
+	});
+	assert!(result.is_err());
 
-    let _ = fs::remove_dir_all(&root);
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[test]
 fn config_init_force_overwrites() {
-    let root = unique_temp_dir("config-init-force");
-    fs::write(root.join("lspee.toml"), "old content").unwrap();
+	let root = unique_temp_dir("config-init-force");
+	fs::write(root.join("lspee.toml"), "old content").unwrap();
 
-    lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
-        action: lspee_cli::commands::config::ConfigAction::Init(
-            lspee_cli::commands::config::InitCommand {
-                root: Some(root.clone()),
-                force: true,
-            },
-        ),
-    })
-    .unwrap();
+	lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
+		action: lspee_cli::commands::config::ConfigAction::Init(
+			lspee_cli::commands::config::InitCommand {
+				root: Some(root.clone()),
+				force: true,
+			},
+		),
+	})
+	.unwrap();
 
-    let content = fs::read_to_string(root.join("lspee.toml")).unwrap();
-    assert!(!content.contains("old content"));
+	let content = fs::read_to_string(root.join("lspee.toml")).unwrap();
+	assert!(!content.contains("old content"));
 
-    let _ = fs::remove_dir_all(&root);
+	let _ = fs::remove_dir_all(&root);
 }
 
 // ---------------------------------------------------------------------------
@@ -922,148 +922,148 @@ fn config_init_force_overwrites() {
 
 #[tokio::test]
 async fn daemon_attach_bad_payload() {
-    let root = unique_temp_dir("bad-attach-payload");
-    write_project_config(&root);
+	let root = unique_temp_dir("bad-attach-payload");
+	write_project_config(&root);
 
-    let daemon_task = spawn_daemon(&root);
-    wait_for_socket(&root).await;
+	let daemon_task = spawn_daemon(&root);
+	wait_for_socket(&root).await;
 
-    use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_ATTACH, TYPE_ERROR};
-    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+	use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_ATTACH, TYPE_ERROR};
+	use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-    let socket = root.join(".lspee").join("daemon.sock");
-    let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
-    let (reader, mut writer) = stream.into_split();
-    let mut lines = BufReader::new(reader).lines();
+	let socket = root.join(".lspee").join("daemon.sock");
+	let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
+	let (reader, mut writer) = stream.into_split();
+	let mut lines = BufReader::new(reader).lines();
 
-    // Send Attach with invalid payload (not an Attach struct)
-    let envelope = ControlEnvelope {
-        v: PROTOCOL_VERSION,
-        id: Some("bad-payload".to_string()),
-        message_type: TYPE_ATTACH.to_string(),
-        payload: serde_json::json!("not an attach struct"),
-    };
-    let mut bytes = serde_json::to_vec(&envelope).unwrap();
-    bytes.push(b'\n');
-    writer.write_all(&bytes).await.unwrap();
-    writer.flush().await.unwrap();
+	// Send Attach with invalid payload (not an Attach struct)
+	let envelope = ControlEnvelope {
+		v: PROTOCOL_VERSION,
+		id: Some("bad-payload".to_string()),
+		message_type: TYPE_ATTACH.to_string(),
+		payload: serde_json::json!("not an attach struct"),
+	};
+	let mut bytes = serde_json::to_vec(&envelope).unwrap();
+	bytes.push(b'\n');
+	writer.write_all(&bytes).await.unwrap();
+	writer.flush().await.unwrap();
 
-    let line = lines.next_line().await.unwrap().unwrap();
-    let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
-    assert_eq!(resp.message_type, TYPE_ERROR);
-    assert_eq!(resp.payload["code"], "E_BAD_MESSAGE");
+	let line = lines.next_line().await.unwrap().unwrap();
+	let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
+	assert_eq!(resp.message_type, TYPE_ERROR);
+	assert_eq!(resp.payload["code"], "E_BAD_MESSAGE");
 
-    shutdown_daemon(&root).await;
-    let _ = daemon_task.await;
-    let _ = fs::remove_dir_all(&root);
+	shutdown_daemon(&root).await;
+	let _ = daemon_task.await;
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[tokio::test]
 async fn daemon_call_bad_payload() {
-    let root = unique_temp_dir("bad-call-payload");
-    write_project_config(&root);
+	let root = unique_temp_dir("bad-call-payload");
+	write_project_config(&root);
 
-    let daemon_task = spawn_daemon(&root);
-    wait_for_socket(&root).await;
+	let daemon_task = spawn_daemon(&root);
+	wait_for_socket(&root).await;
 
-    use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_CALL, TYPE_ERROR};
-    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+	use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_CALL, TYPE_ERROR};
+	use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-    let socket = root.join(".lspee").join("daemon.sock");
-    let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
-    let (reader, mut writer) = stream.into_split();
-    let mut lines = BufReader::new(reader).lines();
+	let socket = root.join(".lspee").join("daemon.sock");
+	let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
+	let (reader, mut writer) = stream.into_split();
+	let mut lines = BufReader::new(reader).lines();
 
-    let envelope = ControlEnvelope {
-        v: PROTOCOL_VERSION,
-        id: Some("bad-call".to_string()),
-        message_type: TYPE_CALL.to_string(),
-        payload: serde_json::json!(42),
-    };
-    let mut bytes = serde_json::to_vec(&envelope).unwrap();
-    bytes.push(b'\n');
-    writer.write_all(&bytes).await.unwrap();
-    writer.flush().await.unwrap();
+	let envelope = ControlEnvelope {
+		v: PROTOCOL_VERSION,
+		id: Some("bad-call".to_string()),
+		message_type: TYPE_CALL.to_string(),
+		payload: serde_json::json!(42),
+	};
+	let mut bytes = serde_json::to_vec(&envelope).unwrap();
+	bytes.push(b'\n');
+	writer.write_all(&bytes).await.unwrap();
+	writer.flush().await.unwrap();
 
-    let line = lines.next_line().await.unwrap().unwrap();
-    let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
-    assert_eq!(resp.message_type, TYPE_ERROR);
+	let line = lines.next_line().await.unwrap().unwrap();
+	let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
+	assert_eq!(resp.message_type, TYPE_ERROR);
 
-    shutdown_daemon(&root).await;
-    let _ = daemon_task.await;
-    let _ = fs::remove_dir_all(&root);
+	shutdown_daemon(&root).await;
+	let _ = daemon_task.await;
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[tokio::test]
 async fn daemon_release_bad_payload() {
-    let root = unique_temp_dir("bad-release-payload");
-    write_project_config(&root);
+	let root = unique_temp_dir("bad-release-payload");
+	write_project_config(&root);
 
-    let daemon_task = spawn_daemon(&root);
-    wait_for_socket(&root).await;
+	let daemon_task = spawn_daemon(&root);
+	wait_for_socket(&root).await;
 
-    use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_ERROR, TYPE_RELEASE};
-    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+	use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_ERROR, TYPE_RELEASE};
+	use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-    let socket = root.join(".lspee").join("daemon.sock");
-    let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
-    let (reader, mut writer) = stream.into_split();
-    let mut lines = BufReader::new(reader).lines();
+	let socket = root.join(".lspee").join("daemon.sock");
+	let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
+	let (reader, mut writer) = stream.into_split();
+	let mut lines = BufReader::new(reader).lines();
 
-    let envelope = ControlEnvelope {
-        v: PROTOCOL_VERSION,
-        id: Some("bad-rel".to_string()),
-        message_type: TYPE_RELEASE.to_string(),
-        payload: serde_json::json!("nope"),
-    };
-    let mut bytes = serde_json::to_vec(&envelope).unwrap();
-    bytes.push(b'\n');
-    writer.write_all(&bytes).await.unwrap();
-    writer.flush().await.unwrap();
+	let envelope = ControlEnvelope {
+		v: PROTOCOL_VERSION,
+		id: Some("bad-rel".to_string()),
+		message_type: TYPE_RELEASE.to_string(),
+		payload: serde_json::json!("nope"),
+	};
+	let mut bytes = serde_json::to_vec(&envelope).unwrap();
+	bytes.push(b'\n');
+	writer.write_all(&bytes).await.unwrap();
+	writer.flush().await.unwrap();
 
-    let line = lines.next_line().await.unwrap().unwrap();
-    let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
-    assert_eq!(resp.message_type, TYPE_ERROR);
+	let line = lines.next_line().await.unwrap().unwrap();
+	let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
+	assert_eq!(resp.message_type, TYPE_ERROR);
 
-    shutdown_daemon(&root).await;
-    let _ = daemon_task.await;
-    let _ = fs::remove_dir_all(&root);
+	shutdown_daemon(&root).await;
+	let _ = daemon_task.await;
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[tokio::test]
 async fn daemon_shutdown_bad_payload() {
-    let root = unique_temp_dir("bad-shutdown-payload");
-    write_project_config(&root);
+	let root = unique_temp_dir("bad-shutdown-payload");
+	write_project_config(&root);
 
-    let daemon_task = spawn_daemon(&root);
-    wait_for_socket(&root).await;
+	let daemon_task = spawn_daemon(&root);
+	wait_for_socket(&root).await;
 
-    use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_ERROR, TYPE_SHUTDOWN};
-    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+	use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_ERROR, TYPE_SHUTDOWN};
+	use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-    let socket = root.join(".lspee").join("daemon.sock");
-    let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
-    let (reader, mut writer) = stream.into_split();
-    let mut lines = BufReader::new(reader).lines();
+	let socket = root.join(".lspee").join("daemon.sock");
+	let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
+	let (reader, mut writer) = stream.into_split();
+	let mut lines = BufReader::new(reader).lines();
 
-    let envelope = ControlEnvelope {
-        v: PROTOCOL_VERSION,
-        id: Some("bad-shut".to_string()),
-        message_type: TYPE_SHUTDOWN.to_string(),
-        payload: serde_json::json!("not a shutdown"),
-    };
-    let mut bytes = serde_json::to_vec(&envelope).unwrap();
-    bytes.push(b'\n');
-    writer.write_all(&bytes).await.unwrap();
-    writer.flush().await.unwrap();
+	let envelope = ControlEnvelope {
+		v: PROTOCOL_VERSION,
+		id: Some("bad-shut".to_string()),
+		message_type: TYPE_SHUTDOWN.to_string(),
+		payload: serde_json::json!("not a shutdown"),
+	};
+	let mut bytes = serde_json::to_vec(&envelope).unwrap();
+	bytes.push(b'\n');
+	writer.write_all(&bytes).await.unwrap();
+	writer.flush().await.unwrap();
 
-    let line = lines.next_line().await.unwrap().unwrap();
-    let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
-    assert_eq!(resp.message_type, TYPE_ERROR);
+	let line = lines.next_line().await.unwrap().unwrap();
+	let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
+	assert_eq!(resp.message_type, TYPE_ERROR);
 
-    shutdown_daemon(&root).await;
-    let _ = daemon_task.await;
-    let _ = fs::remove_dir_all(&root);
+	shutdown_daemon(&root).await;
+	let _ = daemon_task.await;
+	let _ = fs::remove_dir_all(&root);
 }
 
 // ---------------------------------------------------------------------------
@@ -1072,115 +1072,115 @@ async fn daemon_shutdown_bad_payload() {
 
 #[test]
 fn dispatch_lsp_command_via_run() {
-    let root = unique_temp_dir("dispatch-lsp");
-    write_project_config(&root);
-    let result = lspee_cli::commands::run(lspee_cli::commands::Command::Lsp(
-        lspee_cli::commands::lsp::LspCommand {
-            project_root: Some(root.clone()),
-            output: lspee_cli::commands::lsp::LspOutput::Json,
-        },
-    ));
-    assert!(result.is_ok());
-    let _ = fs::remove_dir_all(&root);
+	let root = unique_temp_dir("dispatch-lsp");
+	write_project_config(&root);
+	let result = lspee_cli::commands::run(lspee_cli::commands::Command::Lsp(
+		lspee_cli::commands::lsp::LspCommand {
+			project_root: Some(root.clone()),
+			output: lspee_cli::commands::lsp::LspOutput::Json,
+		},
+	));
+	assert!(result.is_ok());
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[test]
 fn dispatch_lsps_command_via_run() {
-    let result = lspee_cli::commands::run(lspee_cli::commands::Command::Lsps(
-        lspee_cli::commands::lsps::LspsCommand {
-            file: Some(PathBuf::from("main.rs")),
-            output: lspee_cli::commands::lsps::LspsOutput::Json,
-        },
-    ));
-    assert!(result.is_ok());
+	let result = lspee_cli::commands::run(lspee_cli::commands::Command::Lsps(
+		lspee_cli::commands::lsps::LspsCommand {
+			file: Some(PathBuf::from("main.rs")),
+			output: lspee_cli::commands::lsps::LspsOutput::Json,
+		},
+	));
+	assert!(result.is_ok());
 }
 
 #[test]
 fn dispatch_doctor_via_run() {
-    let root = unique_temp_dir("dispatch-doc");
-    write_project_config(&root);
-    let result = lspee_cli::commands::run(lspee_cli::commands::Command::Doctor(
-        lspee_cli::commands::doctor::DoctorCommand {
-            project_root: Some(root.clone()),
-            output: lspee_cli::commands::doctor::DoctorOutput::Json,
-        },
-    ));
-    assert!(result.is_ok());
-    let _ = fs::remove_dir_all(&root);
+	let root = unique_temp_dir("dispatch-doc");
+	write_project_config(&root);
+	let result = lspee_cli::commands::run(lspee_cli::commands::Command::Doctor(
+		lspee_cli::commands::doctor::DoctorCommand {
+			project_root: Some(root.clone()),
+			output: lspee_cli::commands::doctor::DoctorOutput::Json,
+		},
+	));
+	assert!(result.is_ok());
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[test]
 fn dispatch_config_via_run() {
-    let root = unique_temp_dir("dispatch-cfg");
-    write_project_config(&root);
-    let result = lspee_cli::commands::run(lspee_cli::commands::Command::Config(
-        lspee_cli::commands::config::ConfigCommand {
-            action: lspee_cli::commands::config::ConfigAction::Show(
-                lspee_cli::commands::config::ShowCommand {
-                    root: Some(root.clone()),
-                    output: lspee_cli::commands::config::ConfigOutput::Json,
-                },
-            ),
-        },
-    ));
-    assert!(result.is_ok());
-    let _ = fs::remove_dir_all(&root);
+	let root = unique_temp_dir("dispatch-cfg");
+	write_project_config(&root);
+	let result = lspee_cli::commands::run(lspee_cli::commands::Command::Config(
+		lspee_cli::commands::config::ConfigCommand {
+			action: lspee_cli::commands::config::ConfigAction::Show(
+				lspee_cli::commands::config::ShowCommand {
+					root: Some(root.clone()),
+					output: lspee_cli::commands::config::ConfigOutput::Json,
+				},
+			),
+		},
+	));
+	assert!(result.is_ok());
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[test]
 fn dispatch_stop_via_run() {
-    let root = unique_temp_dir("dispatch-stop");
-    write_project_config(&root);
-    let result = lspee_cli::commands::run(lspee_cli::commands::Command::Stop(
-        lspee_cli::commands::stop::StopCommand {
-            project_root: Some(root.clone()),
-        },
-    ));
-    assert!(result.is_ok());
-    let _ = fs::remove_dir_all(&root);
+	let root = unique_temp_dir("dispatch-stop");
+	write_project_config(&root);
+	let result = lspee_cli::commands::run(lspee_cli::commands::Command::Stop(
+		lspee_cli::commands::stop::StopCommand {
+			project_root: Some(root.clone()),
+		},
+	));
+	assert!(result.is_ok());
+	let _ = fs::remove_dir_all(&root);
 }
 
 #[test]
 fn dispatch_status_call_caps_via_run() {
-    let root = unique_temp_dir("dispatch-multi");
-    write_project_config(&root);
-    let daemon_thread = spawn_daemon_thread(&root);
-    wait_for_socket_sync(&root);
+	let root = unique_temp_dir("dispatch-multi");
+	write_project_config(&root);
+	let daemon_thread = spawn_daemon_thread(&root);
+	wait_for_socket_sync(&root);
 
-    let _ = lspee_cli::commands::run(lspee_cli::commands::Command::Status(
-        lspee_cli::commands::status::StatusCommand {
-            project_root: Some(root.clone()),
-            no_start_daemon: false,
-            output: lspee_cli::commands::status::StatusOutput::Json,
-        },
-    ));
+	let _ = lspee_cli::commands::run(lspee_cli::commands::Command::Status(
+		lspee_cli::commands::status::StatusCommand {
+			project_root: Some(root.clone()),
+			no_start_daemon: false,
+			output: lspee_cli::commands::status::StatusOutput::Json,
+		},
+	));
 
-    let request = serde_json::json!({"jsonrpc":"2.0","id":1,"method":"test","params":{}});
-    let _ = lspee_cli::commands::run(lspee_cli::commands::Command::Call(
-        lspee_cli::commands::call::CallCommand {
-            lsp: "rust-analyzer".to_string(),
-            root: Some(root.clone()),
-            request: serde_json::to_string(&request).unwrap(),
-            no_start_daemon: false,
-            client_kind: lspee_cli::commands::call::CallClientKind::Agent,
-            output: lspee_cli::commands::call::CallOutput::Json,
-        },
-    ));
+	let request = serde_json::json!({"jsonrpc":"2.0","id":1,"method":"test","params":{}});
+	let _ = lspee_cli::commands::run(lspee_cli::commands::Command::Call(
+		lspee_cli::commands::call::CallCommand {
+			lsp: "rust-analyzer".to_string(),
+			root: Some(root.clone()),
+			request: serde_json::to_string(&request).unwrap(),
+			no_start_daemon: false,
+			client_kind: lspee_cli::commands::call::CallClientKind::Agent,
+			output: lspee_cli::commands::call::CallOutput::Json,
+		},
+	));
 
-    let _ = lspee_cli::commands::run(lspee_cli::commands::Command::Capabilities(
-        lspee_cli::commands::capabilities::CapabilitiesCommand {
-            lsp: "rust-analyzer".to_string(),
-            root: Some(root.clone()),
-            no_start_daemon: false,
-            output: lspee_cli::commands::capabilities::CapabilitiesOutput::Json,
-        },
-    ));
+	let _ = lspee_cli::commands::run(lspee_cli::commands::Command::Capabilities(
+		lspee_cli::commands::capabilities::CapabilitiesCommand {
+			lsp: "rust-analyzer".to_string(),
+			root: Some(root.clone()),
+			no_start_daemon: false,
+			output: lspee_cli::commands::capabilities::CapabilitiesOutput::Json,
+		},
+	));
 
-    let _ = lspee_cli::commands::run(lspee_cli::commands::Command::Stop(
-        lspee_cli::commands::stop::StopCommand {
-            project_root: Some(root.clone()),
-        },
-    ));
-    let _ = daemon_thread.join();
-    let _ = fs::remove_dir_all(&root);
+	let _ = lspee_cli::commands::run(lspee_cli::commands::Command::Stop(
+		lspee_cli::commands::stop::StopCommand {
+			project_root: Some(root.clone()),
+		},
+	));
+	let _ = daemon_thread.join();
+	let _ = fs::remove_dir_all(&root);
 }

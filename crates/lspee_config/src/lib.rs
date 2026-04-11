@@ -185,14 +185,10 @@ pub fn hash_identity(project_root: &Path, merged_config: &EffectiveConfig) -> St
 fn canonical_project_root(project_root_override: Option<&Path>) -> Result<PathBuf, ConfigError> {
 	let root = match project_root_override {
 		Some(path) => path.to_path_buf(),
-		None => {
-			std::env::current_dir().map_err(|source| {
-				ConfigError::Read {
-					path: PathBuf::from("."),
-					source,
-				}
-			})?
-		}
+		None => std::env::current_dir().map_err(|source| ConfigError::Read {
+			path: PathBuf::from("."),
+			source,
+		})?,
 	};
 
 	fs::canonicalize(&root).map_err(|source| ConfigError::Canonicalize { path: root, source })
@@ -203,26 +199,21 @@ fn load_partial_if_exists(path: &Path) -> Result<Option<PartialConfig>, ConfigEr
 		return Ok(None);
 	}
 
-	let raw = fs::read_to_string(path).map_err(|source| {
-		ConfigError::Read {
-			path: path.to_path_buf(),
-			source,
-		}
+	let raw = fs::read_to_string(path).map_err(|source| ConfigError::Read {
+		path: path.to_path_buf(),
+		source,
 	})?;
 
-	let parsed = toml::from_str(&raw).map_err(|source| {
-		ConfigError::Parse {
-			path: path.to_path_buf(),
-			source,
-		}
+	let parsed = toml::from_str(&raw).map_err(|source| ConfigError::Parse {
+		path: path.to_path_buf(),
+		source,
 	})?;
 
 	Ok(Some(parsed))
 }
 
 fn user_config_path() -> PathBuf {
-	let home =
-		std::env::var_os("HOME").map_or_else(|| PathBuf::from("~"), PathBuf::from);
+	let home = std::env::var_os("HOME").map_or_else(|| PathBuf::from("~"), PathBuf::from);
 	home.join(USER_CONFIG_DIR).join(USER_CONFIG_FILE)
 }
 
@@ -248,14 +239,12 @@ fn default_config() -> EffectiveConfig {
 fn apply_partial(merged: &mut EffectiveConfig, partial: PartialConfig) {
 	for lsp in partial.lsp {
 		let id = lsp.id.clone().unwrap_or_else(|| "default".to_string());
-		let entry = merged.lsps.entry(id.clone()).or_insert_with(|| {
-			LspConfig {
-				id: id.clone(),
-				command: String::new(),
-				args: Vec::new(),
-				env: BTreeMap::new(),
-				initialization_options: BTreeMap::new(),
-			}
+		let entry = merged.lsps.entry(id.clone()).or_insert_with(|| LspConfig {
+			id: id.clone(),
+			command: String::new(),
+			args: Vec::new(),
+			env: BTreeMap::new(),
+			initialization_options: BTreeMap::new(),
 		});
 
 		if let Some(command) = lsp.command {

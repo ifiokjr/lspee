@@ -482,15 +482,13 @@ impl SessionRegistry {
 
 		let session_snapshots = sessions
 			.values()
-			.map(|record| {
-				SessionSnapshot {
-					key: record.handle.key.clone(),
-					ref_count: record.ref_count,
-					terminating: record.terminating,
-					idle_for: now.saturating_duration_since(record.last_used),
-					idle_ttl,
-					client_kinds: lease_client_kinds(&record.handle.key, &leases),
-				}
+			.map(|record| SessionSnapshot {
+				key: record.handle.key.clone(),
+				ref_count: record.ref_count,
+				terminating: record.terminating,
+				idle_for: now.saturating_duration_since(record.last_used),
+				idle_ttl,
+				client_kinds: lease_client_kinds(&record.handle.key, &leases),
 			})
 			.collect();
 
@@ -584,8 +582,8 @@ mod tests {
 		let key = test_key("acq");
 
 		let lease = reg
-			.acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| {
-				async move { Ok(test_handle(k).await) }
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| async move {
+				Ok(test_handle(k).await)
 			})
 			.await
 			.expect("should spawn");
@@ -614,14 +612,14 @@ mod tests {
 		let key = test_key("reuse");
 
 		let lease1 = reg
-			.acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| {
-				async move { Ok(test_handle(k).await) }
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| async move {
+				Ok(test_handle(k).await)
 			})
 			.await
 			.unwrap();
 		let lease2 = reg
-			.acquire_or_spawn(key.clone(), Some(ClientKind::Human), |_| {
-				async { panic!("should not spawn again") }
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Human), |_| async {
+				panic!("should not spawn again")
 			})
 			.await
 			.unwrap();
@@ -767,8 +765,8 @@ mod tests {
 		let key = test_key("snap");
 
 		let lease = reg
-			.acquire_or_spawn(key.clone(), Some(ClientKind::Ci), |k| {
-				async move { Ok(test_handle(k).await) }
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Ci), |k| async move {
+				Ok(test_handle(k).await)
 			})
 			.await
 			.unwrap();

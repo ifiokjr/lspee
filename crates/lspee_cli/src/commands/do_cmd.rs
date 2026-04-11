@@ -38,9 +38,10 @@
 //!
 //! # Document sync
 //!
-//! Transparent `textDocument/didOpen` is not yet implemented (planned for
-//! Phase 3). The daemon's `initialize` with the workspace root is
-//! sufficient for most LSP servers to respond to requests.
+//! When the request targets a file (has a `textDocument` parameter),
+//! `textDocument/didOpen` is sent before the main request and
+//! `textDocument/didClose` is sent after. This uses the daemon's `Notify`
+//! protocol to avoid blocking on fire-and-forget LSP notifications.
 
 use std::fs::File;
 use std::io::BufRead;
@@ -62,6 +63,7 @@ use lspee_daemon::CallOk;
 use lspee_daemon::ClientKind;
 use lspee_daemon::ClientMeta;
 use lspee_daemon::ControlEnvelope;
+use lspee_daemon::Notify;
 use lspee_daemon::Release;
 use lspee_daemon::SessionKeyWire;
 use lspee_daemon::StreamMode;
@@ -69,6 +71,8 @@ use lspee_daemon::TYPE_ATTACH;
 use lspee_daemon::TYPE_ATTACH_OK;
 use lspee_daemon::TYPE_CALL;
 use lspee_daemon::TYPE_CALL_OK;
+use lspee_daemon::TYPE_NOTIFY;
+use lspee_daemon::TYPE_NOTIFY_OK;
 use lspee_daemon::TYPE_RELEASE;
 use lspee_daemon::TYPE_RELEASE_OK;
 use serde::Serialize;
@@ -436,14 +440,12 @@ impl DoMethod {
 			Self::CodeAction(a) => a.position.shared.clone(),
 			Self::Formatting(a) => a.shared.clone(),
 			Self::Symbols(a) | Self::Diagnostics(a) => a.shared.clone(),
-			Self::WorkspaceSymbols(a) => {
-				SharedArgs {
-					lsp: Some(a.lsp.clone()),
-					root: a.root.clone(),
-					no_start_daemon: a.no_start_daemon,
-					output: a.output,
-				}
-			}
+			Self::WorkspaceSymbols(a) => SharedArgs {
+				lsp: Some(a.lsp.clone()),
+				root: a.root.clone(),
+				no_start_daemon: a.no_start_daemon,
+				output: a.output,
+			},
 		}
 	}
 
@@ -581,6 +583,47 @@ pub fn read_context_line(path: &Path, line: u32) -> Option<String> {
 	let file = File::open(path).ok()?;
 	let reader = BufReader::new(file);
 	reader.lines().nth(line as usize)?.ok()
+}
+
+/// Detect the LSP language identifier from a file extension.
+///
+/// Maps common file extensions to their LSP `languageId` string. Returns
+/// `"plaintext"` for unrecognized extensions or files without an extension.
+///
+/// # Examples
+///
+/// ```ignore
+/// assert_eq!(language_id_for_extension("rs"), "rust");
+/// assert_eq!(language_id_for_extension("tsx"), "typescriptreact");
+/// assert_eq!(language_id_for_extension("unknown"), "plaintext");
+/// ```
+pub fn language_id_for_extension(ext: &str) -> &'static str {
+	match ext {
+		"rs" => "rust",
+		"ts" => "typescript",
+		"tsx" => "typescriptreact",
+		"js" => "javascript",
+		"jsx" => "javascriptreact",
+		"py" => "python",
+		"go" => "go",
+		"toml" => "toml",
+		"json" => "json",
+		"md" => "markdown",
+		"yaml" | "yml" => "yaml",
+		"html" => "html",
+		"css" => "css",
+		_ => "plaintext",
+	}
+}
+
+/// Detect the LSP language identifier for a file path.
+///
+/// Extracts the extension from the path and delegates to
+/// [`language_id_for_extension`].
+pub fn language_id_for_path(path: &Path) -> &'static str {
+	path.extension()
+		.and_then(|ext| ext.to_str())
+		.map_or("plaintext", language_id_for_extension)
 }
 
 /// Extract the result payload from a JSON-RPC response.
@@ -932,6 +975,19 @@ async fn run_async(cmd: DoCommand) -> Result<()> {
 	)
 	.await?;
 
+	// Send textDocument/didOpen if the method targets a file.
+	let did_open_uri = if let Some(file_path) = cmd.method.file_path() {
+		match send_did_open(&mut writer, &mut lines, &lease_id, file_path).await {
+			Ok(uri) => Some(uri),
+			Err(error) => {
+				tracing::warn!(?error, "failed to send textDocument/didOpen");
+				None
+			}
+		}
+	} else {
+		None
+	};
+
 	// Call LSP method (timed).
 	let start = Instant::now();
 	let call_id = client::new_request_id("call");
@@ -946,6 +1002,13 @@ async fn run_async(cmd: DoCommand) -> Result<()> {
 	};
 	client::write_frame(&mut writer, &call).await?;
 	let call_response = client::read_response_for_id(&mut lines, &call_id).await;
+
+	// Send textDocument/didClose if we opened the document.
+	if let Some(ref uri) = did_open_uri {
+		if let Err(error) = send_did_close(&mut writer, &mut lines, &lease_id, uri).await {
+			tracing::warn!(?error, "failed to send textDocument/didClose");
+		}
+	}
 
 	// Always release lease.
 	let release_result = release_lease(&mut writer, &mut lines, &lease_id).await;
@@ -1054,6 +1117,103 @@ async fn release_lease(
 	if response.message_type != TYPE_RELEASE_OK {
 		anyhow::bail!(
 			"unexpected response type for Release: {}",
+			response.message_type
+		);
+	}
+
+	Ok(())
+}
+
+/// Send a `textDocument/didOpen` notification via the daemon's `Notify`
+/// protocol. Returns the file URI on success so it can be reused for
+/// `didClose`.
+async fn send_did_open(
+	writer: &mut tokio::net::unix::OwnedWriteHalf,
+	lines: &mut Lines<tokio::io::BufReader<tokio::net::unix::OwnedReadHalf>>,
+	lease_id: &str,
+	file_path: &Path,
+) -> Result<String> {
+	let uri = file_uri(file_path)?;
+	let language_id = language_id_for_path(file_path);
+	let text = std::fs::read_to_string(file_path).map_err(|e| {
+		anyhow::anyhow!(
+			"cannot read file '{}' for didOpen: {e}",
+			file_path.display()
+		)
+	})?;
+
+	let message = json!({
+		"jsonrpc": "2.0",
+		"method": "textDocument/didOpen",
+		"params": {
+			"textDocument": {
+				"uri": uri,
+				"languageId": language_id,
+				"version": 1,
+				"text": text,
+			}
+		}
+	});
+
+	let notify_id = client::new_request_id("notify-open");
+	let envelope = ControlEnvelope {
+		v: lspee_daemon::PROTOCOL_VERSION,
+		id: Some(notify_id.clone()),
+		message_type: TYPE_NOTIFY.to_string(),
+		payload: serde_json::to_value(Notify {
+			lease_id: lease_id.to_string(),
+			message,
+		})?,
+	};
+
+	client::write_frame(writer, &envelope).await?;
+	let response = client::read_response_for_id(lines, &notify_id).await?;
+	client::ensure_not_error(&response)?;
+	if response.message_type != TYPE_NOTIFY_OK {
+		anyhow::bail!(
+			"unexpected response type for Notify (didOpen): {}",
+			response.message_type
+		);
+	}
+
+	Ok(uri)
+}
+
+/// Send a `textDocument/didClose` notification via the daemon's `Notify`
+/// protocol.
+async fn send_did_close(
+	writer: &mut tokio::net::unix::OwnedWriteHalf,
+	lines: &mut Lines<tokio::io::BufReader<tokio::net::unix::OwnedReadHalf>>,
+	lease_id: &str,
+	uri: &str,
+) -> Result<()> {
+	let message = json!({
+		"jsonrpc": "2.0",
+		"method": "textDocument/didClose",
+		"params": {
+			"textDocument": {
+				"uri": uri,
+			}
+		}
+	});
+
+	let notify_id = client::new_request_id("notify-close");
+	let envelope = ControlEnvelope {
+		v: lspee_daemon::PROTOCOL_VERSION,
+		id: Some(notify_id.clone()),
+		message_type: TYPE_NOTIFY.to_string(),
+		payload: serde_json::to_value(Notify {
+			lease_id: lease_id.to_string(),
+			message,
+		})?,
+	};
+
+	client::write_frame(writer, &envelope).await?;
+	let response = client::read_response_for_id(lines, &notify_id).await?;
+	client::ensure_not_error(&response)?;
+	if response.message_type != TYPE_NOTIFY_OK {
+		anyhow::bail!(
+			"unexpected response type for Notify (didClose): {}",
 			response.message_type
 		);
 	}
@@ -2348,6 +2508,100 @@ mod tests {
 
 		let parsed: Value = serde_json::from_str(&output).unwrap();
 		assert_eq!(parsed["result"]["error"]["code"], -32601);
+	}
+
+	// -- language_id_for_extension -------------------------------------------
+
+	#[test]
+	fn language_id_rust() {
+		assert_eq!(language_id_for_extension("rs"), "rust");
+	}
+
+	#[test]
+	fn language_id_typescript() {
+		assert_eq!(language_id_for_extension("ts"), "typescript");
+	}
+
+	#[test]
+	fn language_id_typescriptreact() {
+		assert_eq!(language_id_for_extension("tsx"), "typescriptreact");
+	}
+
+	#[test]
+	fn language_id_javascript() {
+		assert_eq!(language_id_for_extension("js"), "javascript");
+	}
+
+	#[test]
+	fn language_id_javascriptreact() {
+		assert_eq!(language_id_for_extension("jsx"), "javascriptreact");
+	}
+
+	#[test]
+	fn language_id_python() {
+		assert_eq!(language_id_for_extension("py"), "python");
+	}
+
+	#[test]
+	fn language_id_go() {
+		assert_eq!(language_id_for_extension("go"), "go");
+	}
+
+	#[test]
+	fn language_id_toml() {
+		assert_eq!(language_id_for_extension("toml"), "toml");
+	}
+
+	#[test]
+	fn language_id_json() {
+		assert_eq!(language_id_for_extension("json"), "json");
+	}
+
+	#[test]
+	fn language_id_markdown() {
+		assert_eq!(language_id_for_extension("md"), "markdown");
+	}
+
+	#[test]
+	fn language_id_yaml() {
+		assert_eq!(language_id_for_extension("yaml"), "yaml");
+	}
+
+	#[test]
+	fn language_id_yml() {
+		assert_eq!(language_id_for_extension("yml"), "yaml");
+	}
+
+	#[test]
+	fn language_id_html() {
+		assert_eq!(language_id_for_extension("html"), "html");
+	}
+
+	#[test]
+	fn language_id_css() {
+		assert_eq!(language_id_for_extension("css"), "css");
+	}
+
+	#[test]
+	fn language_id_unknown_defaults_to_plaintext() {
+		assert_eq!(language_id_for_extension("xyz"), "plaintext");
+		assert_eq!(language_id_for_extension(""), "plaintext");
+	}
+
+	// -- language_id_for_path -----------------------------------------------
+
+	#[test]
+	fn language_id_for_path_with_extension() {
+		assert_eq!(language_id_for_path(Path::new("src/main.rs")), "rust");
+		assert_eq!(
+			language_id_for_path(Path::new("/home/user/app.tsx")),
+			"typescriptreact"
+		);
+	}
+
+	#[test]
+	fn language_id_for_path_no_extension() {
+		assert_eq!(language_id_for_path(Path::new("Makefile")), "plaintext");
 	}
 
 	// -- integration: run_async with live daemon ----------------------------

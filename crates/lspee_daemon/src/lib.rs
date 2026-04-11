@@ -266,20 +266,19 @@ async fn dispatch_control_request(
 		TYPE_ATTACH => dispatch_attach(id, payload, registry).await,
 		TYPE_RELEASE => dispatch_release(id, payload, registry).await,
 		TYPE_CALL => dispatch_call(id, payload, registry).await,
+		TYPE_NOTIFY => dispatch_notify(id, payload, registry).await,
 		TYPE_STATS => dispatch_stats(id, registry, started_at, memory_settings).await,
 		TYPE_SHUTDOWN => dispatch_shutdown(id, payload, shutdown_tx).await,
-		_ => {
-			DispatchOutcome {
-				response: error_envelope(
-					id,
-					ERROR_UNKNOWN_TYPE,
-					"Unknown control message type",
-					false,
-					None,
-				),
-				shutdown_requested: false,
-			}
-		}
+		_ => DispatchOutcome {
+			response: error_envelope(
+				id,
+				ERROR_UNKNOWN_TYPE,
+				"Unknown control message type",
+				false,
+				None,
+			),
+			shutdown_requested: false,
+		},
 	}
 }
 
@@ -370,12 +369,10 @@ async fn dispatch_attach(
 					)
 					.await
 					{
-						Ok(endpoint) => {
-							StreamInfo {
-								mode: StreamMode::Dedicated,
-								endpoint: Some(format!("unix://{}", endpoint.display())),
-							}
-						}
+						Ok(endpoint) => StreamInfo {
+							mode: StreamMode::Dedicated,
+							endpoint: Some(format!("unix://{}", endpoint.display())),
+						},
 						Err(error) => {
 							let _ = registry.release_by_lease_id(lease.lease_id()).await;
 							return DispatchOutcome {
@@ -391,12 +388,10 @@ async fn dispatch_attach(
 						}
 					}
 				}
-				StreamMode::MuxControl => {
-					StreamInfo {
-						mode: StreamMode::MuxControl,
-						endpoint: None,
-					}
-				}
+				StreamMode::MuxControl => StreamInfo {
+					mode: StreamMode::MuxControl,
+					endpoint: None,
+				},
 			};
 
 			let body = AttachOk {
@@ -411,15 +406,13 @@ async fn dispatch_attach(
 			};
 			ok_envelope(id, TYPE_ATTACH_OK, body)
 		}
-		Err(error) => {
-			error_envelope(
-				id,
-				ERROR_SESSION_SPAWN_FAILED,
-				&error.to_string(),
-				true,
-				None,
-			)
-		}
+		Err(error) => error_envelope(
+			id,
+			ERROR_SESSION_SPAWN_FAILED,
+			&error.to_string(),
+			true,
+			None,
+		),
 	};
 
 	DispatchOutcome {
@@ -451,16 +444,14 @@ async fn dispatch_release(
 	};
 
 	let response = match registry.release_by_lease_id(&payload.lease_id).await {
-		Some(ref_count) => {
-			ok_envelope(
-				id,
-				TYPE_RELEASE_OK,
-				ReleaseOk {
-					lease_id: payload.lease_id,
-					ref_count: ref_count as u64,
-				},
-			)
-		}
+		Some(ref_count) => ok_envelope(
+			id,
+			TYPE_RELEASE_OK,
+			ReleaseOk {
+				lease_id: payload.lease_id,
+				ref_count: ref_count as u64,
+			},
+		),
 		None => error_envelope(id, ERROR_LEASE_NOT_FOUND, "Lease not found", false, None),
 	};
 
@@ -504,6 +495,54 @@ async fn dispatch_call(
 				(ERROR_SESSION_RESTARTING, true)
 			} else if message.contains("timeout") || message.contains("timed out") {
 				(ERROR_TIMEOUT, true)
+			} else {
+				(ERROR_INTERNAL, true)
+			};
+			error_envelope(id, code, &message, retryable, None)
+		}
+	};
+
+	DispatchOutcome {
+		response,
+		shutdown_requested: false,
+	}
+}
+
+#[instrument(skip_all, fields(request_id = ?id))]
+async fn dispatch_notify(
+	id: Option<String>,
+	payload: Value,
+	registry: &SessionRegistry,
+) -> DispatchOutcome {
+	let payload: Notify = match serde_json::from_value(payload) {
+		Ok(payload) => payload,
+		Err(_) => {
+			return DispatchOutcome {
+				response: error_envelope(
+					id,
+					ERROR_BAD_MESSAGE,
+					"Invalid Notify payload",
+					false,
+					None,
+				),
+				shutdown_requested: false,
+			};
+		}
+	};
+
+	let lease_id = payload.lease_id.clone();
+	let response = match registry
+		.notify_by_lease_id(&lease_id, payload.message)
+		.await
+	{
+		Ok(Some(())) => ok_envelope(id, TYPE_NOTIFY_OK, NotifyOk { lease_id }),
+		Ok(None) => error_envelope(id, ERROR_LEASE_NOT_FOUND, "Lease not found", false, None),
+		Err(error) => {
+			let message = error.to_string();
+			let (code, retryable) = if message.contains(ERROR_SESSION_EVICTED_MEMORY) {
+				(ERROR_SESSION_EVICTED_MEMORY, true)
+			} else if message.contains("terminating") {
+				(ERROR_SESSION_RESTARTING, true)
 			} else {
 				(ERROR_INTERNAL, true)
 			};

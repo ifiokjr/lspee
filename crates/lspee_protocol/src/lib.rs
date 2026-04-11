@@ -19,6 +19,8 @@ pub const TYPE_RELEASE: &str = "Release";
 pub const TYPE_RELEASE_OK: &str = "ReleaseOk";
 pub const TYPE_CALL: &str = "Call";
 pub const TYPE_CALL_OK: &str = "CallOk";
+pub const TYPE_NOTIFY: &str = "Notify";
+pub const TYPE_NOTIFY_OK: &str = "NotifyOk";
 pub const TYPE_PING: &str = "Ping";
 pub const TYPE_PONG: &str = "Pong";
 pub const TYPE_SHUTDOWN: &str = "Shutdown";
@@ -87,6 +89,8 @@ pub enum ControlPayload {
 	ReleaseOk(ReleaseOk),
 	Call(Call),
 	CallOk(CallOk),
+	Notify(Notify),
+	NotifyOk(NotifyOk),
 	Ping(Ping),
 	Pong(Pong),
 	Shutdown(Shutdown),
@@ -240,6 +244,47 @@ pub struct Call {
 pub struct CallOk {
 	pub lease_id: String,
 	pub response: Value,
+}
+
+/// Send an LSP notification (no response expected from the server).
+///
+/// Unlike [`Call`], the daemon forwards the message using
+/// `LspRuntime::send()` and returns immediately without waiting for a
+/// matching response.
+///
+/// # Examples
+///
+/// ```
+/// use lspee_protocol::Notify;
+/// use serde_json::json;
+///
+/// let notify = Notify {
+/// 	lease_id: "lease_1".to_string(),
+/// 	message: json!({
+/// 		"jsonrpc": "2.0",
+/// 		"method": "textDocument/didOpen",
+/// 		"params": {
+/// 			"textDocument": {
+/// 				"uri": "file:///tmp/test.rs",
+/// 				"languageId": "rust",
+/// 				"version": 1,
+/// 				"text": "fn main() {}"
+/// 			}
+/// 		}
+/// 	}),
+/// };
+/// assert_eq!(notify.lease_id, "lease_1");
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Notify {
+	pub lease_id: String,
+	pub message: Value,
+}
+
+/// Acknowledgement returned after a [`Notify`] message is forwarded.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotifyOk {
+	pub lease_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

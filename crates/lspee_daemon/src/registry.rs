@@ -384,6 +384,41 @@ impl SessionRegistry {
 		Ok(Some(response))
 	}
 
+	/// Send an LSP notification via `LspRuntime::send()` without waiting for
+	/// a response. Returns `Ok(true)` if the lease was found and the message
+	/// was forwarded, `Ok(false)` if the lease was not found.
+	#[instrument(skip(self, message))]
+	pub async fn notify_by_lease_id(&self, lease_id: &str, message: Value) -> Result<Option<()>> {
+		let key = {
+			let leases = self.leases.read().await;
+			match leases.get(lease_id) {
+				Some(lease) => lease.key.clone(),
+				None => return Ok(None),
+			}
+		};
+
+		let runtime = {
+			let mut sessions = self.sessions.write().await;
+			let Some(record) = sessions.get_mut(&key) else {
+				return Ok(None);
+			};
+
+			if record.terminating {
+				if let Some(notice) = &record.termination_notice {
+					return Err(anyhow!("{}: {}", notice.code, notice.message));
+				}
+				return Err(anyhow!("session is terminating"));
+			}
+
+			record.touch();
+			record.handle.runtime.clone()
+		};
+
+		runtime.send(message).await?;
+		self.touch(&key).await;
+		Ok(Some(()))
+	}
+
 	pub async fn touch(&self, key: &SessionKey) {
 		let mut sessions = self.sessions.write().await;
 		if let Some(record) = sessions.get_mut(key) {
@@ -482,15 +517,13 @@ impl SessionRegistry {
 
 		let session_snapshots = sessions
 			.values()
-			.map(|record| {
-				SessionSnapshot {
-					key: record.handle.key.clone(),
-					ref_count: record.ref_count,
-					terminating: record.terminating,
-					idle_for: now.saturating_duration_since(record.last_used),
-					idle_ttl,
-					client_kinds: lease_client_kinds(&record.handle.key, &leases),
-				}
+			.map(|record| SessionSnapshot {
+				key: record.handle.key.clone(),
+				ref_count: record.ref_count,
+				terminating: record.terminating,
+				idle_for: now.saturating_duration_since(record.last_used),
+				idle_ttl,
+				client_kinds: lease_client_kinds(&record.handle.key, &leases),
 			})
 			.collect();
 
@@ -584,8 +617,8 @@ mod tests {
 		let key = test_key("acq");
 
 		let lease = reg
-			.acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| {
-				async move { Ok(test_handle(k).await) }
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| async move {
+				Ok(test_handle(k).await)
 			})
 			.await
 			.expect("should spawn");
@@ -614,14 +647,14 @@ mod tests {
 		let key = test_key("reuse");
 
 		let lease1 = reg
-			.acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| {
-				async move { Ok(test_handle(k).await) }
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| async move {
+				Ok(test_handle(k).await)
 			})
 			.await
 			.unwrap();
 		let lease2 = reg
-			.acquire_or_spawn(key.clone(), Some(ClientKind::Human), |_| {
-				async { panic!("should not spawn again") }
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Human), |_| async {
+				panic!("should not spawn again")
 			})
 			.await
 			.unwrap();
@@ -767,8 +800,8 @@ mod tests {
 		let key = test_key("snap");
 
 		let lease = reg
-			.acquire_or_spawn(key.clone(), Some(ClientKind::Ci), |k| {
-				async move { Ok(test_handle(k).await) }
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Ci), |k| async move {
+				Ok(test_handle(k).await)
 			})
 			.await
 			.unwrap();

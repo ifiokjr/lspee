@@ -543,7 +543,10 @@ idle_ttl_secs = 1
     .await;
 
     assert_eq!(stats.message_type, TYPE_STATS_OK);
-    assert_eq!(stats.payload["sessions"], 0, "session should have been evicted");
+    assert_eq!(
+        stats.payload["sessions"], 0,
+        "session should have been evicted"
+    );
     assert!(
         stats.payload["counters"]["sessions_gc_idle_total"]
             .as_u64()

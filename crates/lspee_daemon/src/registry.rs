@@ -520,3 +520,321 @@ fn lease_client_kinds(key: &SessionKey, leases: &HashMap<String, LeaseRecord>) -
 
     kinds.into_iter().collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{collections::BTreeMap, fs, path::PathBuf};
+
+    fn test_key(id: &str) -> SessionKey {
+        SessionKey::new(
+            PathBuf::from(format!("/tmp/lspee-reg-test-{id}")),
+            id,
+            "hash",
+        )
+    }
+
+    async fn test_handle(key: SessionKey) -> SessionHandle {
+        fs::create_dir_all(&key.root).expect("root dir");
+        let transport = std::sync::Arc::new(lspee_lsp::LspTransport::new(key.root.clone()));
+        let lsp = lspee_config::LspConfig {
+            id: key.lsp_id.clone(),
+            command: "cat".to_string(),
+            args: Vec::new(),
+            env: BTreeMap::new(),
+            initialization_options: BTreeMap::new(),
+        };
+        let runtime = std::sync::Arc::new(transport.spawn(&lsp).await.expect("spawn cat"));
+        let (events, _) = broadcast::channel(4);
+        SessionHandle {
+            key,
+            transport,
+            runtime,
+            initialize_result: serde_json::Value::Null,
+            events,
+        }
+    }
+
+    #[tokio::test]
+    async fn registry_new_is_empty() {
+        let reg = SessionRegistry::new();
+        assert_eq!(reg.session_count().await, 0);
+        assert_eq!(reg.lease_count().await, 0);
+        assert_eq!(reg.idle_ttl(), DEFAULT_IDLE_TTL);
+    }
+
+    #[tokio::test]
+    async fn registry_with_custom_idle_ttl() {
+        let reg = SessionRegistry::with_idle_ttl(Duration::from_secs(60));
+        assert_eq!(reg.idle_ttl(), Duration::from_secs(60));
+    }
+
+    #[tokio::test]
+    async fn acquire_spawn_and_release() {
+        let reg = SessionRegistry::new();
+        let key = test_key("acq");
+
+        let lease = reg
+            .acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| async move {
+                Ok(test_handle(k).await)
+            })
+            .await
+            .expect("should spawn");
+
+        assert_eq!(reg.session_count().await, 1);
+        assert_eq!(reg.lease_count().await, 1);
+        assert_eq!(lease.key(), &key);
+
+        let remaining = reg.release_by_lease_id(lease.lease_id()).await;
+        assert_eq!(remaining, Some(0));
+        assert_eq!(reg.lease_count().await, 0);
+        assert_eq!(reg.session_count().await, 1); // session still alive
+
+        // Cleanup
+        let handles = reg.all_handles().await;
+        for h in &handles {
+            let _ = h.runtime.force_stop().await;
+        }
+        reg.remove(&key).await;
+        let _ = fs::remove_dir_all(&key.root);
+    }
+
+    #[tokio::test]
+    async fn acquire_reuses_existing_session() {
+        let reg = SessionRegistry::new();
+        let key = test_key("reuse");
+
+        let lease1 = reg
+            .acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| async move {
+                Ok(test_handle(k).await)
+            })
+            .await
+            .unwrap();
+        let lease2 = reg
+            .acquire_or_spawn(key.clone(), Some(ClientKind::Human), |_| async {
+                panic!("should not spawn again")
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(reg.session_count().await, 1);
+        assert_eq!(reg.lease_count().await, 2);
+        assert_ne!(lease1.lease_id(), lease2.lease_id());
+
+        let counters = reg.counters().await;
+        assert_eq!(counters.sessions_spawned_total, 1);
+        assert!(counters.sessions_reused_total >= 1);
+
+        reg.release_by_lease_id(lease1.lease_id()).await;
+        reg.release_by_lease_id(lease2.lease_id()).await;
+        let handles = reg.all_handles().await;
+        for h in &handles {
+            let _ = h.runtime.force_stop().await;
+        }
+        reg.remove(&key).await;
+        let _ = fs::remove_dir_all(&key.root);
+    }
+
+    #[tokio::test]
+    async fn session_handle_lookup() {
+        let reg = SessionRegistry::new();
+        let key = test_key("lookup");
+
+        assert!(reg.session_handle(&key).await.is_none());
+
+        let lease = reg
+            .acquire_or_spawn(
+                key.clone(),
+                None,
+                |k| async move { Ok(test_handle(k).await) },
+            )
+            .await
+            .unwrap();
+
+        assert!(reg.session_handle(&key).await.is_some());
+        assert!(reg.handle_for_lease_id(lease.lease_id()).await.is_some());
+        assert!(reg.handle_for_lease_id("nonexistent").await.is_none());
+
+        reg.release_by_lease_id(lease.lease_id()).await;
+        let handles = reg.all_handles().await;
+        for h in &handles {
+            let _ = h.runtime.force_stop().await;
+        }
+        reg.remove(&key).await;
+        let _ = fs::remove_dir_all(&key.root);
+    }
+
+    #[tokio::test]
+    async fn call_by_lease_id_roundtrips() {
+        let reg = SessionRegistry::new();
+        let key = test_key("call-rt");
+
+        let lease = reg
+            .acquire_or_spawn(
+                key.clone(),
+                None,
+                |k| async move { Ok(test_handle(k).await) },
+            )
+            .await
+            .unwrap();
+
+        let response = reg
+            .call_by_lease_id(
+                lease.lease_id(),
+                serde_json::json!({"jsonrpc":"2.0","id":99,"method":"test","params":{}}),
+            )
+            .await
+            .unwrap();
+
+        assert!(response.is_some());
+        assert_eq!(response.unwrap()["id"], 99);
+
+        // Nonexistent lease
+        let none = reg
+            .call_by_lease_id("nope", serde_json::json!({}))
+            .await
+            .unwrap();
+        assert!(none.is_none());
+
+        reg.release_by_lease_id(lease.lease_id()).await;
+        let handles = reg.all_handles().await;
+        for h in &handles {
+            let _ = h.runtime.force_stop().await;
+        }
+        reg.remove(&key).await;
+        let _ = fs::remove_dir_all(&key.root);
+    }
+
+    #[tokio::test]
+    async fn mark_terminating_prevents_calls() {
+        let reg = SessionRegistry::new();
+        let key = test_key("term");
+
+        let lease = reg
+            .acquire_or_spawn(
+                key.clone(),
+                None,
+                |k| async move { Ok(test_handle(k).await) },
+            )
+            .await
+            .unwrap();
+
+        reg.mark_terminating_with_notice(&key, None).await;
+
+        let result = reg
+            .call_by_lease_id(
+                lease.lease_id(),
+                serde_json::json!({"jsonrpc":"2.0","id":1,"method":"test","params":{}}),
+            )
+            .await;
+        assert!(result.is_err());
+
+        reg.release_by_lease_id(lease.lease_id()).await;
+        let handles = reg.all_handles().await;
+        for h in &handles {
+            let _ = h.runtime.force_stop().await;
+        }
+        reg.remove(&key).await;
+        let _ = fs::remove_dir_all(&key.root);
+    }
+
+    #[tokio::test]
+    async fn counters_increment() {
+        let reg = SessionRegistry::new();
+
+        reg.increment_idle_gc().await;
+        reg.increment_memory_eviction().await;
+        reg.increment_session_crash().await;
+
+        let counters = reg.counters().await;
+        assert_eq!(counters.sessions_gc_idle_total, 1);
+        assert_eq!(counters.sessions_evicted_memory_total, 1);
+        assert_eq!(counters.session_crashes_total, 1);
+    }
+
+    #[tokio::test]
+    async fn snapshot_captures_state() {
+        let reg = SessionRegistry::new();
+        let key = test_key("snap");
+
+        let lease = reg
+            .acquire_or_spawn(key.clone(), Some(ClientKind::Ci), |k| async move {
+                Ok(test_handle(k).await)
+            })
+            .await
+            .unwrap();
+
+        let snap = reg.snapshot().await;
+        assert_eq!(snap.sessions.len(), 1);
+        assert_eq!(snap.lease_count, 1);
+        assert_eq!(snap.sessions[0].ref_count, 1);
+        assert!(!snap.sessions[0].terminating);
+
+        reg.release_by_lease_id(lease.lease_id()).await;
+        let handles = reg.all_handles().await;
+        for h in &handles {
+            let _ = h.runtime.force_stop().await;
+        }
+        reg.remove(&key).await;
+        let _ = fs::remove_dir_all(&key.root);
+    }
+
+    #[tokio::test]
+    async fn release_many() {
+        let reg = SessionRegistry::new();
+        let key = test_key("rel-many");
+
+        let l1 = reg
+            .acquire_or_spawn(
+                key.clone(),
+                None,
+                |k| async move { Ok(test_handle(k).await) },
+            )
+            .await
+            .unwrap();
+        let l2 = reg
+            .acquire_or_spawn(key.clone(), None, |_| async { panic!("no spawn") })
+            .await
+            .unwrap();
+
+        assert_eq!(reg.lease_count().await, 2);
+
+        reg.release_many(vec![l1.lease_id().to_string(), l2.lease_id().to_string()])
+            .await;
+
+        assert_eq!(reg.lease_count().await, 0);
+
+        let handles = reg.all_handles().await;
+        for h in &handles {
+            let _ = h.runtime.force_stop().await;
+        }
+        reg.remove(&key).await;
+        let _ = fs::remove_dir_all(&key.root);
+    }
+
+    #[tokio::test]
+    async fn lease_release_method() {
+        let reg = SessionRegistry::new();
+        let key = test_key("lease-rel");
+
+        let lease = reg
+            .acquire_or_spawn(
+                key.clone(),
+                None,
+                |k| async move { Ok(test_handle(k).await) },
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(reg.lease_count().await, 1);
+        lease.release().await;
+        assert_eq!(reg.lease_count().await, 0);
+
+        let handles = reg.all_handles().await;
+        for h in &handles {
+            let _ = h.runtime.force_stop().await;
+        }
+        reg.remove(&key).await;
+        let _ = fs::remove_dir_all(&key.root);
+    }
+}

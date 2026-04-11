@@ -2,3 +2,12 @@
 /target/
 /docs/book/
 .DS_Store
+.devenv/
+devenv.local.nix
+.direnv/
+result
+dist/
+lcov.info
+.bin/
+.local-cache/
+.claude/worktrees/

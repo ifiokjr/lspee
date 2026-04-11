@@ -9,11 +9,11 @@ use lspee_cli::commands;
 #[derive(Debug, Parser)]
 #[command(name = "lspee")]
 struct Cli {
-    #[command(subcommand)]
-    command: commands::Command,
+	#[command(subcommand)]
+	command: commands::Command,
 }
 
 fn main() -> anyhow::Result<()> {
-    let cli = Cli::parse();
-    commands::run(cli.command)
+	let cli = Cli::parse();
+	commands::run(cli.command)
 }

@@ -1,0 +1,29 @@
+---
+source: crates/lspee_cli/tests/snapshot_tests.rs
+expression: "serde_json::json!({\n    \"lsps\": resolved.merged.lsps, \"root_markers\":\n    resolved.merged.root_markers, \"workspace_mode\":\n    resolved.merged.workspace_mode, \"session\":\n    { \"idle_ttl_secs\": resolved.merged.session.idle_ttl_secs, },\n})"
+---
+{
+  "lsps": {
+    "rust-analyzer": {
+      "args": [],
+      "command": "cat",
+      "env": {},
+      "id": "rust-analyzer",
+      "initialization_options": {}
+    },
+    "taplo": {
+      "args": [],
+      "command": "cat",
+      "env": {},
+      "id": "taplo",
+      "initialization_options": {}
+    }
+  },
+  "root_markers": [
+    ".git"
+  ],
+  "session": {
+    "idle_ttl_secs": 600
+  },
+  "workspace_mode": "single"
+}

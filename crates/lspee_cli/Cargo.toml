@@ -32,6 +32,8 @@ toml_edit.workspace = true
 [dev-dependencies]
 lspee_daemon = { path = "../lspee_daemon" }
 lspee_config = { path = "../lspee_config" }
+lspee_test_helpers = { path = "../../testing/lspee_test_helpers" }
+insta = { version = "1.42", features = ["json", "redactions", "filters"] }
 tokio = { workspace = true, features = ["test-util"] }
 serde_json.workspace = true
 clap.workspace = true

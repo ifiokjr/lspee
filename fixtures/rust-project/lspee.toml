@@ -1,0 +1,6 @@
+workspace_mode = "single"
+
+[[lsp]]
+id = "rust-analyzer"
+command = "cat"
+args = []

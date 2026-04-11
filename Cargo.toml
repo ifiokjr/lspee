@@ -7,6 +7,7 @@ members = [
   "crates/lspee_protocol",
   "crates/lspee",
 ]
+exclude = ["testing/lspee_test_helpers"]
 resolver = "2"
 
 [workspace.package]

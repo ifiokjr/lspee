@@ -1,6 +1,6 @@
 pub mod call;
 pub mod capabilities;
-mod client;
+pub mod client;
 pub mod config;
 pub mod doctor;
 pub mod lsp;

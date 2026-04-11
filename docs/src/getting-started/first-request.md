@@ -26,7 +26,7 @@ lspee call --lsp rust-analyzer --request @request.json --output json
 ## What happens internally
 
 1. CLI resolves merged config (`defaults < user < project`).
-2. CLI computes `(project_root, lsp_id, config_hash)`.
+2. CLI computes the session key {{#include ../includes/session-key-inline.md}}.
 3. CLI sends `Attach` to daemon.
 4. Daemon reuses/spawns matching session.
 5. CLI sends `Call` with JSON-RPC payload.

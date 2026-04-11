@@ -15,6 +15,8 @@ edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ifiokjr/lspee"
+homepage = "https://ifiokjr.github.io/lspee/"
+documentation = "https://docs.rs/lspee"
 authors = ["Ifiok Jr. <ifiokjr@users.noreply.github.com>"]
 
 [workspace.dependencies]

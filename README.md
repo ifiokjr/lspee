@@ -1,5 +1,8 @@
 # lspee
 
+[![Book](https://img.shields.io/badge/book-ifiokjr.github.io%2Flspee-blue)](https://ifiokjr.github.io/lspee/)
+[![CI](https://github.com/ifiokjr/lspee/actions/workflows/ci.yml/badge.svg)](https://github.com/ifiokjr/lspee/actions/workflows/ci.yml)
+
 `lspee` is a local LSP multiplexer for fast, shared, per-workspace language-server access.
 
 It is designed for both:
@@ -15,16 +18,20 @@ Windows named-pipe support is not yet implemented.
 
 ## Workspace crates
 
-- `crates/lspee_cli` — `lspee` binary and command UX.
-- `crates/lspee_daemon` — daemon socket server + session lifecycle.
-- `crates/lspee_lsp` — JSON-RPC/LSP subprocess bridge.
-- `crates/lspee_config` — config layering + identity hashing + language catalog.
-- `crates/lspee_protocol` — shared control-protocol models.
-- `crates/lspee` — reservation stub crate for package-name preservation.
+| Crate | Description |
+|-------|-------------|
+| [`lspee_cli`](crates/lspee_cli) | `lspee` binary and command UX |
+| [`lspee_daemon`](crates/lspee_daemon) | Daemon socket server + session lifecycle |
+| [`lspee_lsp`](crates/lspee_lsp) | JSON-RPC/LSP subprocess bridge |
+| [`lspee_config`](crates/lspee_config) | Config layering + identity hashing + language catalog |
+| [`lspee_protocol`](crates/lspee_protocol) | Shared control-protocol models |
+| [`lspee`](crates/lspee) | Reservation stub crate for package-name preservation |
 
 ## Install / build
 
 ```bash
+git clone https://github.com/ifiokjr/lspee.git
+cd lspee
 cargo build --release -p lspee_cli
 cargo install --path crates/lspee_cli
 ```
@@ -65,12 +72,10 @@ lspee call --lsp rust-analyzer --request @request.json --output json
 
 ## Documentation
 
-Extensive mdBook docs live in:
+- **[Book](https://ifiokjr.github.io/lspee/)** — comprehensive guide with installation, usage, and reference
+- **[API docs (docs.rs)](https://docs.rs/lspee)** — Rust API documentation
 
-- `docs/book.toml`
-- `docs/src/SUMMARY.md`
-
-Build docs with mdBook:
+Build docs locally with mdBook:
 
 ```bash
 cd docs

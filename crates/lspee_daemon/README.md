@@ -1,5 +1,7 @@
 # lspee_daemon
 
+[![Book](https://img.shields.io/badge/book-ifiokjr.github.io%2Flspee-blue)](https://ifiokjr.github.io/lspee/)
+
 Runtime/daemon crate for `lspee`.
 
 ## Responsibility
@@ -30,3 +32,5 @@ Runtime/daemon crate for `lspee`.
 ## Notes
 
 This crate should act as the operational core. Keep policy decisions here, while keeping protocol details encapsulated in `lspee_lsp`.
+
+**Website:** <https://ifiokjr.github.io/lspee/>

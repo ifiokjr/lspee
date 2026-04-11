@@ -4,9 +4,7 @@
 
 Sessions are keyed by:
 
-```text
-(project_root, lsp_id, config_hash)
-```
+{{#include ../includes/session-key.md}}
 
 ## What is shared
 

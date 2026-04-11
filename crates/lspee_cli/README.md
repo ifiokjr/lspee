@@ -1,5 +1,7 @@
 # lspee_cli
 
+[![Book](https://img.shields.io/badge/book-ifiokjr.github.io%2Flspee-blue)](https://ifiokjr.github.io/lspee/)
+
 Command-line interface crate for `lspee`.
 
 ## Responsibility
@@ -30,3 +32,5 @@ Command-line interface crate for `lspee`.
 ## Notes
 
 If logic starts looking reusable outside CLI argument handling, move it into the appropriate lower crate and keep this crate thin.
+
+**Website:** <https://ifiokjr.github.io/lspee/>

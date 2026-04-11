@@ -18,9 +18,7 @@ Instead, `lspee` keeps warm language-server sessions behind a daemon and lets ca
 
 A session is identified by:
 
-```text
-(project_root, lsp_id, config_hash)
-```
+{{#include includes/session-key.md}}
 
 When two callers use the same key, they reuse the same running LSP process.
 

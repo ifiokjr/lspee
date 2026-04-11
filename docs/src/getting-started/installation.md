@@ -8,23 +8,11 @@
 
 ## Build from source
 
-```bash
-git clone <your-repo-url>
-cd lspee
-cargo build --release -p lspee_cli
-```
-
-Binary path:
-
-```text
-target/release/lspee
-```
+{{#include ../includes/install-from-source.md}}
 
 ## Install CLI locally
 
-```bash
-cargo install --path crates/lspee_cli
-```
+{{#include ../includes/install-cargo.md}}
 
 ## Verify
 

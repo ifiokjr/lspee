@@ -5,6 +5,8 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
 description = "Reserved crate name for the lspee project; implementation crates are published separately."
 
 [lib]

@@ -1,5 +1,7 @@
 # lspee_config
 
+[![Book](https://img.shields.io/badge/book-ifiokjr.github.io%2Flspee-blue)](https://ifiokjr.github.io/lspee/)
+
 Configuration model crate for `lspee`.
 
 ## Responsibility
@@ -28,3 +30,5 @@ Configuration model crate for `lspee`.
 Keep this crate deterministic and side-effect-light where practical; it is the safest place for shared, stable domain configuration types.
 
 The built-in `defaults/languages.toml` catalog is Helix-inspired and currently seeds 100 LSP entries.
+
+**Website:** <https://ifiokjr.github.io/lspee/>

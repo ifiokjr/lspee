@@ -2,7 +2,7 @@
 
 `lspee` ships with a Helix-inspired default LSP catalog at:
 
-- `crates/lspee_config/defaults/languages.toml`
+- {{#include ../includes/catalog-path.md}}
 
 Current seed size: **100 LSP definitions**.
 

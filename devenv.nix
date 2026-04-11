@@ -40,39 +40,61 @@ in
   # disable dotenv since it breaks the variable interpolation supported by `direnv`
   dotenv.disableHint = true;
 
-  git-hooks.hooks = {
-    lspee-pre-commit = {
-      enable = true;
-      name = "lspee pre-commit formatting check";
-      description = "Check and apply dprint formatting to staged changes.";
-      entry = "bash scripts/git-hooks/pre-commit.sh";
-      language = "system";
-      pass_filenames = true;
-      require_serial = true;
-      always_run = true;
-      stages = [ "pre-commit" ];
-      extraPackages = with pkgs; [
-        bash
-        devenv
-        git
-      ];
-    };
+  git-hooks = {
+    # package = pkgs.prek;
 
-    lspee-pre-push = {
-      enable = true;
-      name = "lspee pre-push CI checks";
-      description = "Run the local CI-equivalent checks before pushing.";
-      entry = "bash scripts/git-hooks/pre-push.sh";
-      language = "system";
-      pass_filenames = false;
-      require_serial = true;
-      always_run = true;
-      stages = [ "pre-push" ];
-      extraPackages = with pkgs; [
-        bash
-        devenv
-        git
-      ];
+    hooks = {
+      "secrets:commit" = {
+        enable = true;
+        verbose = true;
+        pass_filenames = true;
+        name = "secrets";
+        description = "Scan staged changes for leaked secrets with gitleaks.";
+        entry = "${pkgs.gitleaks}/bin/gitleaks protect --staged --verbose --redact";
+        stages = [ "pre-commit" ];
+        extraPackages = with pkgs; [
+          gitleaks
+        ];
+      };
+      dprint = {
+        enable = true;
+        verbose = true;
+        pass_filenames = true;
+        name = "dprint check";
+        description = "Run workspace autofixes before commit and restage the results.";
+        entry = "${pkgs.dprint}/bin/dprint check --allow-no-files";
+        stages = [ "pre-commit" ];
+      };
+      "secrets:push" = {
+        enable = true;
+        verbose = true;
+        pass_filenames = false;
+        name = "secrets";
+        description = "Scan repository history for leaked secrets with gitleaks before push.";
+        entry = "${pkgs.gitleaks}/bin/gitleaks detect --verbose --redact";
+        stages = [ "pre-push" ];
+        extraPackages = with pkgs; [
+          gitleaks
+        ];
+      };
+      "lint" = {
+        enable = true;
+        verbose = true;
+        pass_filenames = false;
+        name = "lint";
+        description = "Run the local CI lint rules suite before push.";
+        entry = "${config.env.DEVENV_PROFILE}/bin/lint:all";
+        stages = [ "pre-push" ];
+      };
+      "test" = {
+        enable = true;
+        verbose = true;
+        pass_filenames = false;
+        name = "test";
+        description = "Run the local CI validation suite before push.";
+        entry = "${config.env.DEVENV_PROFILE}/bin/test:all";
+        stages = [ "pre-push" ];
+      };
     };
   };
 

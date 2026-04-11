@@ -1,0 +1,14 @@
+workspace_mode = "single"
+
+[[lsp]]
+id = "rust-analyzer"
+command = "cat"
+args = []
+
+[[lsp]]
+id = "taplo"
+command = "cat"
+args = []
+
+[session]
+idle_ttl_secs = 600

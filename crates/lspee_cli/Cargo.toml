@@ -25,6 +25,8 @@ clap = { workspace = true, features = ["derive", "env"] }
 lspee_config = { path = "../lspee_config" }
 lspee_daemon = { path = "../lspee_daemon" }
 lspee_lsp = { path = "../lspee_lsp" }
+lspee_mcp = { path = "../lspee_mcp" }
+rmcp = { version = "1.4", features = ["server", "transport-io"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "io-std", "net", "fs", "process"] }
@@ -41,4 +43,5 @@ lspee_config = { path = "../lspee_config" }
 lspee_daemon = { path = "../lspee_daemon" }
 lspee_test_helpers = { path = "../../testing/lspee_test_helpers" }
 serde_json.workspace = true
+tempfile = "3"
 tokio = { workspace = true, features = ["test-util"] }

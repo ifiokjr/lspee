@@ -9,6 +9,7 @@ pub mod lsps;
 pub mod proxy;
 pub mod restart;
 pub mod serve;
+pub mod serve_mcp;
 pub mod status;
 pub mod stop;
 
@@ -38,6 +39,9 @@ pub enum Command {
 	Doctor(doctor::DoctorCommand),
 	/// Manage project configuration (show, init, add-lsp, remove-lsp, set).
 	Config(config::ConfigCommand),
+	/// Start an MCP (Model Context Protocol) server over stdio, exposing lspee
+	/// tools for LLM integration.
+	ServeMcp(serve_mcp::ServeMcpCommand),
 	/// Execute LSP methods with ergonomic flags — no raw JSON-RPC required.
 	///
 	/// Auto-resolves the LSP server from the file extension when `--lsp`
@@ -62,6 +66,7 @@ pub fn run(command: Command) -> anyhow::Result<()> {
 		Command::Lsps(cmd) => lsps::run(cmd),
 		Command::Doctor(cmd) => doctor::run(cmd),
 		Command::Config(cmd) => config::run(&cmd),
+		Command::ServeMcp(cmd) => serve_mcp::run(cmd),
 		Command::Do(cmd) => do_cmd::run(cmd),
 	}
 }

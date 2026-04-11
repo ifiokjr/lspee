@@ -97,6 +97,45 @@ lspee restart
 lspee doctor --output json
 ```
 
+### `lspee serve` — run daemon in foreground
+
+```bash
+lspee serve [--project-root <path>] [--log-format human|json] [--log-file <path>]
+```
+
+## Logging and diagnostics
+
+The daemon supports structured logging for agent debugging.
+
+### Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LSPEE_LOG` | `lspee=info,warn` | Log level filter (uses `tracing_subscriber::EnvFilter` syntax) |
+| `LSPEE_LOG_FORMAT` | `human` | Log format: `human` for readable, `json` for structured output |
+| `LSPEE_LOG_FILE` | stderr | Write logs to a file instead of stderr |
+
+### JSON log output
+
+When running with `--log-format json` or `LSPEE_LOG_FORMAT=json`, the daemon emits structured JSON log lines:
+
+```bash
+LSPEE_LOG_FORMAT=json lspee serve --project-root /my/project
+```
+
+Agents can parse these for diagnostics — session lifecycle events, LSP spawn/shutdown, memory eviction, and errors are all captured with structured fields (`lsp_id`, `lease_id`, `rss_bytes`, etc.).
+
+### Auto-started daemon logs
+
+When the CLI auto-starts a daemon in the background, logs are written to `.lspee/daemon.log` in the project root. To view:
+
+```bash
+cat .lspee/daemon.log
+# or with JSON format:
+LSPEE_LOG_FORMAT=json lspee call --lsp rust-analyzer ...
+cat .lspee/daemon.log | jq .
+```
+
 ## JSON-RPC request format
 
 All `lspee call` requests must be valid JSON-RPC 2.0. Common patterns:

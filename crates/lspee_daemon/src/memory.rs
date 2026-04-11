@@ -29,28 +29,31 @@ impl MemoryMonitor {
     pub fn start(registry: SessionRegistry, settings: MemoryBudgetSettings) -> Self {
         let (stop, mut stop_rx) = oneshot::channel();
 
-        let task = tokio::spawn(async move {
-            let mut ticker = time::interval(settings.check_interval);
-            ticker.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
+        let task = tokio::spawn(tracing::Instrument::instrument(
+            async move {
+                let mut ticker = time::interval(settings.check_interval);
+                ticker.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
 
-            loop {
-                tokio::select! {
-                    _ = ticker.tick() => {
-                        if !settings.enabled() {
-                            continue;
+                loop {
+                    tokio::select! {
+                        _ = ticker.tick() => {
+                            if !settings.enabled() {
+                                continue;
+                            }
+
+                            let samples = collect_samples(&registry).await;
+                            let evictions = select_evictions(&samples, settings);
+
+                            for sample in evictions {
+                                evict_session(&registry, &sample, settings).await;
+                            }
                         }
-
-                        let samples = collect_samples(&registry).await;
-                        let evictions = select_evictions(&samples, settings);
-
-                        for sample in evictions {
-                            evict_session(&registry, &sample, settings).await;
-                        }
+                        _ = &mut stop_rx => break,
                     }
-                    _ = &mut stop_rx => break,
                 }
-            }
-        });
+            },
+            tracing::info_span!("memory_monitor"),
+        ));
 
         Self {
             stop: Some(stop),
@@ -178,6 +181,7 @@ fn dedupe_by_key(samples: Vec<MemorySample>) -> Vec<MemorySample> {
     deduped
 }
 
+#[tracing::instrument(skip_all, fields(lsp_id = %sample.key.lsp_id, rss_bytes = sample.rss_bytes))]
 async fn evict_session(
     registry: &SessionRegistry,
     sample: &MemorySample,

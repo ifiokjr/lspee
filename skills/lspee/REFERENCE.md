@@ -17,6 +17,14 @@ npm install -g @ifi/lspee-skill
 
 ## CLI commands
 
+### `lspee lsp` — show config identity
+
+```bash
+lspee lsp [--project-root <path>] [--output human|json]
+```
+
+Prints the resolved project root, config hash, and configured LSP servers. Useful for debugging session identity.
+
 ### `lspee lsps` — discover available LSPs
 
 ```bash
@@ -33,7 +41,7 @@ lspee capabilities --lsp rust-analyzer --output json
 
 Returns which LSP methods are supported (hover, definition, references, etc.) and server info. Always check this before calling an unfamiliar method.
 
-### `lspee call` — send an LSP request
+### `lspee call` — send a raw LSP request
 
 ```bash
 lspee call \
@@ -43,7 +51,111 @@ lspee call \
   --request '{"jsonrpc":"2.0","id":1,"method":"textDocument/hover","params":{...}}'
 ```
 
+Flags:
+
+| Flag | Description |
+|------|-------------|
+| `--lsp <id>` | LSP server identifier (required) |
+| `--root <path>` | Override project root |
+| `--request <json>` | Raw JSON-RPC payload or `@path/to/file.json` |
+| `--client-kind agent\|human\|ci` | Caller kind for eviction priority (default: `human`) |
+| `--output json\|pretty` | Output format (default: `pretty`) |
+| `--no-start-daemon` | Disable daemon auto-start |
+
 The request must be a valid JSON-RPC 2.0 message. The response is the LSP server's JSON-RPC response.
+
+### `lspee do <method>` — ergonomic LSP dispatch
+
+Execute LSP methods with structured flags instead of raw JSON-RPC. The LSP server is auto-resolved from the file extension when `--lsp` is omitted. Responses are wrapped with metadata (`lsp_id`, `method`, `file`, `position`, `elapsed_ms`). Location results (definition, references, implementation, type-definition) include a `context_line` field with the source text at each location.
+
+#### Shared flags
+
+All `lspee do` methods accept these flags:
+
+| Flag | Description |
+|------|-------------|
+| `--lsp <id>` | LSP server identifier (auto-resolved from file extension if omitted) |
+| `--root <path>` | Override project root |
+| `--output json\|pretty` | Output format (default: `json`) |
+| `--no-start-daemon` | Disable daemon auto-start |
+
+#### Position-based methods
+
+These methods require `--file`, `--line`, and `--col` (zero-based):
+
+```bash
+# Hover — type info and documentation
+lspee do hover --file src/main.rs --line 10 --col 5
+
+# Definition — jump to symbol definition
+lspee do definition --file src/main.rs --line 10 --col 5
+
+# Implementation — find trait/interface implementations
+lspee do implementation --file src/main.rs --line 10 --col 5
+
+# Type definition — jump to the type's definition
+lspee do type-definition --file src/main.rs --line 10 --col 5
+
+# Completion — get completion suggestions
+lspee do completion --file src/main.rs --line 10 --col 5
+
+# Signature help — function parameter info
+lspee do signature-help --file src/main.rs --line 10 --col 5
+```
+
+#### References
+
+```bash
+lspee do references --file src/main.rs --line 10 --col 5 [--include-declaration]
+```
+
+Extra flag: `--include-declaration` includes the symbol's declaration in results (default: false).
+
+#### Rename
+
+```bash
+lspee do rename --file src/main.rs --line 10 --col 5 --new-name better_name
+```
+
+Extra flag: `--new-name <name>` (required) the new name for the symbol.
+
+#### Code action
+
+```bash
+lspee do code-action --file src/main.rs --line 10 --col 5 [--end-line 10 --end-col 20]
+```
+
+Extra flags: `--end-line` and `--end-col` define the end of the selection range (defaults to the start position for a point selection).
+
+#### File-only methods
+
+These methods require only `--file`:
+
+```bash
+# Document symbols — list functions, classes, variables
+lspee do symbols --file src/main.rs
+
+# Diagnostics — pull-model diagnostics (LSP 3.17+)
+lspee do diagnostics --file src/main.rs
+```
+
+#### Formatting
+
+```bash
+lspee do formatting --file src/main.rs [--tab-size 4] [--insert-spaces true]
+```
+
+Extra flags: `--tab-size <n>` (default: 4), `--insert-spaces` (default: true).
+
+#### Workspace symbols
+
+Requires `--lsp` (no file to auto-resolve from):
+
+```bash
+lspee do workspace-symbols --lsp rust-analyzer --query "MyStruct"
+```
+
+Extra flag: `--query <string>` (required) the search query. Use empty string for all symbols.
 
 ### `lspee config show` — view resolved config
 
@@ -87,15 +199,17 @@ lspee status --output json
 ### `lspee stop` / `lspee restart`
 
 ```bash
-lspee stop
-lspee restart
+lspee stop [--project-root <path>]
+lspee restart [--project-root <path>]
 ```
 
 ### `lspee doctor` — environment health check
 
 ```bash
-lspee doctor --output json
+lspee doctor [--project-root <path>] [--output human|json]
 ```
+
+Runs health checks for environment and integration readiness: config resolution, daemon reachability, LSP binary availability, and more.
 
 ### `lspee serve` — run daemon in foreground
 
@@ -103,9 +217,32 @@ lspee doctor --output json
 lspee serve [--project-root <path>] [--log-format human|json] [--log-file <path>]
 ```
 
+### `lspee mcp` — MCP server over stdio
+
+Start an MCP (Model Context Protocol) server over stdio, exposing lspee tools for LLM integration.
+
+```bash
+lspee mcp [--project-root /path/to/project]
+```
+
+#### MCP client configuration
+
+To use with Claude Desktop or other MCP clients, add to your MCP settings JSON:
+
+```json
+{
+  "mcpServers": {
+    "lspee": {
+      "command": "lspee",
+      "args": ["mcp", "--project-root", "/path/to/project"]
+    }
+  }
+}
+```
+
 ## Logging and diagnostics
 
-The daemon supports structured logging for agent debugging.
+The daemon supports structured logging via the `tracing` framework for agent debugging.
 
 ### Environment variables
 

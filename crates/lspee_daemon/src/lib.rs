@@ -27,6 +27,9 @@ use tokio::{
 use tracing::instrument;
 use url::Url;
 
+/// The long-running daemon process that manages LSP sessions.
+///
+#[doc = include_str!("../../../docs/src/includes/daemon-process-tree.md")]
 pub struct Daemon {
     root: PathBuf,
     config: lspee_config::ResolvedConfig,
@@ -75,6 +78,9 @@ impl Daemon {
         }
     }
 
+    /// Start the daemon event loop and listen for control connections.
+    ///
+    #[doc = include_str!("../../../docs/src/includes/daemon-event-loop.md")]
     pub async fn run(&self) -> Result<()> {
         let configured_lsps: Vec<&str> =
             self.config.merged.lsps.keys().map(String::as_str).collect();

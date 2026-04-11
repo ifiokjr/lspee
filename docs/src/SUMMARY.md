@@ -29,5 +29,6 @@
 
 # Advanced
 
+- [Daemon Internals](./advanced/daemon-internals.md)
 - [Session Reuse and Multiplexing](./advanced/session-reuse.md)
 - [Performance and Reliability](./advanced/performance-and-reliability.md)

@@ -1,5 +1,7 @@
 # lspee_config
 
+[![codecov](https://codecov.io/gh/ifiokjr/lspee/branch/main/graph/badge.svg)](https://codecov.io/gh/ifiokjr/lspee)
+
 [![Book](https://img.shields.io/badge/book-ifiokjr.github.io%2Flspee-blue)](https://ifiokjr.github.io/lspee/)
 
 Configuration model crate for `lspee`.

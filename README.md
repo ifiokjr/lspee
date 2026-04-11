@@ -2,6 +2,7 @@
 
 [![Book](https://img.shields.io/badge/book-ifiokjr.github.io%2Flspee-blue)](https://ifiokjr.github.io/lspee/)
 [![CI](https://github.com/ifiokjr/lspee/actions/workflows/ci.yml/badge.svg)](https://github.com/ifiokjr/lspee/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/ifiokjr/lspee/branch/main/graph/badge.svg)](https://codecov.io/gh/ifiokjr/lspee)
 
 `lspee` is a local LSP multiplexer for fast, shared, per-workspace language-server access.
 

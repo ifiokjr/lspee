@@ -2,6 +2,7 @@ pub mod call;
 pub mod capabilities;
 pub mod client;
 pub mod config;
+pub mod do_cmd;
 pub mod doctor;
 pub mod lsp;
 pub mod lsps;
@@ -37,6 +38,15 @@ pub enum Command {
     Doctor(doctor::DoctorCommand),
     /// Manage project configuration (show, init, add-lsp, remove-lsp, set).
     Config(config::ConfigCommand),
+    /// Execute LSP methods with ergonomic flags — no raw JSON-RPC required.
+    ///
+    /// Auto-resolves the LSP server from the file extension when `--lsp`
+    /// is omitted. Wraps responses with metadata (lsp_id, method, file,
+    /// position, elapsed_ms). For location results (definition, references,
+    /// implementation, type-definition), adds a `context_line` field with
+    /// the source text at each location.
+    #[command(name = "do")]
+    Do(do_cmd::DoCommand),
 }
 
 pub fn run(command: Command) -> anyhow::Result<()> {
@@ -52,5 +62,6 @@ pub fn run(command: Command) -> anyhow::Result<()> {
         Command::Lsps(cmd) => lsps::run(cmd),
         Command::Doctor(cmd) => doctor::run(cmd),
         Command::Config(cmd) => config::run(cmd),
+        Command::Do(cmd) => do_cmd::run(cmd),
     }
 }

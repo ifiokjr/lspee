@@ -1,0 +1,4 @@
+[[lsp]]
+id = "rust-analyzer"
+command = "rust-analyzer"
+args = []

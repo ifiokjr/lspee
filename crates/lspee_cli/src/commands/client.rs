@@ -20,6 +20,9 @@ pub fn daemon_socket_path(project_root: &Path) -> PathBuf {
     project_root.join(".lspee").join("daemon.sock")
 }
 
+/// Connect to an existing daemon or auto-start one if needed.
+///
+#[doc = include_str!("../../../../docs/src/includes/daemon-auto-start.md")]
 pub async fn connect(project_root: &Path, auto_start: bool) -> Result<UnixStream> {
     let socket_path = daemon_socket_path(project_root);
 
@@ -60,6 +63,9 @@ pub async fn connect(project_root: &Path, auto_start: bool) -> Result<UnixStream
     ))
 }
 
+/// Spawn a background daemon process for the given project root.
+///
+#[doc = include_str!("../../../../docs/src/includes/daemon-spawn-mechanism.md")]
 fn spawn_daemon(project_root: &Path) -> Result<()> {
     let current_exe = std::env::current_exe().context("failed to resolve current executable")?;
     let log_dir = project_root.join(".lspee");

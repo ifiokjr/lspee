@@ -20,28 +20,28 @@ name = "lspee"
 path = "src/main.rs"
 
 [dependencies]
-anyhow.workspace = true
-clap = { workspace = true, features = ["derive", "env"] }
+anyhow = { workspace = true, default-features = true }
+clap = { workspace = true, default-features = true, features = ["derive", "env"] }
 lspee_config = { path = "../lspee_config" }
 lspee_daemon = { path = "../lspee_daemon" }
 lspee_lsp = { path = "../lspee_lsp" }
 lspee_mcp = { path = "../lspee_mcp" }
 rmcp = { version = "1.4", features = ["server", "transport-io"] }
-serde = { workspace = true, features = ["derive"] }
-serde_json.workspace = true
-tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "io-std", "net", "fs", "process"] }
-toml.workspace = true
-toml_edit.workspace = true
-tracing.workspace = true
-tracing-subscriber = { workspace = true, features = ["json", "env-filter"] }
-url.workspace = true
+serde = { workspace = true, default-features = true, features = ["derive"] }
+serde_json = { workspace = true, default-features = true }
+tokio = { workspace = true, default-features = true, features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "io-std", "net", "fs", "process"] }
+toml = { workspace = true, default-features = true }
+toml_edit = { workspace = true, default-features = true }
+tracing = { workspace = true, default-features = true }
+tracing-subscriber = { workspace = true, default-features = true, features = ["json", "env-filter"] }
+url = { workspace = true, default-features = true }
 
 [dev-dependencies]
-clap.workspace = true
-insta = { workspace = true, features = ["json", "redactions", "filters"] }
+clap = { workspace = true, default-features = true }
+insta = { workspace = true, default-features = true, features = ["json", "redactions", "filters"] }
 lspee_config = { path = "../lspee_config" }
 lspee_daemon = { path = "../lspee_daemon" }
 lspee_test_helpers = { path = "../../testing/lspee_test_helpers" }
-serde_json.workspace = true
+serde_json = { workspace = true, default-features = true }
 tempfile = "3"
-tokio = { workspace = true, features = ["test-util"] }
+tokio = { workspace = true, default-features = true, features = ["test-util"] }

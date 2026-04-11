@@ -22,21 +22,21 @@ documentation = "https://docs.rs/lspee"
 authors = ["Ifiok Jr. <ifiokjr@users.noreply.github.com>"]
 
 [workspace.dependencies]
-anyhow = "1.0"
-clap = "4.5"
-insta = "1.42"
-lsp-types = "0.97"
-serde = "1.0"
-serde_json = "1.0"
-sha2 = "0.10"
-thiserror = "2.0"
-tokio = "1.44"
-toml = "0.8"
-toml_edit = "0.22"
-tower-lsp = "0.20"
-tracing = "0.1"
-tracing-subscriber = "0.3"
-url = "2.5"
+anyhow = { version = "1.0", default-features = false }
+clap = { version = "4.5", default-features = false }
+insta = { version = "1.42", default-features = false }
+lsp-types = { version = "0.97", default-features = false }
+serde = { version = "1.0", default-features = false }
+serde_json = { version = "1.0", default-features = false }
+sha2 = { version = "0.10", default-features = false }
+thiserror = { version = "2.0", default-features = false }
+tokio = { version = "1.44", default-features = false }
+toml = { version = "0.8", default-features = false }
+toml_edit = { version = "0.22", default-features = false }
+tower-lsp = { version = "0.20", default-features = false }
+tracing = { version = "0.1", default-features = false }
+tracing-subscriber = { version = "0.3", default-features = false }
+url = { version = "2.5", default-features = false }
 
 [workspace.metadata.bin]
 cargo-insta = { version = "1.46.3" }

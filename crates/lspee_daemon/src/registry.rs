@@ -129,7 +129,7 @@ struct LeaseRecord {
 
 #[derive(Debug, Clone)]
 pub struct Lease {
-	lease_id: String,
+	id: String,
 	key: SessionKey,
 	registry: SessionRegistry,
 }
@@ -140,11 +140,11 @@ impl Lease {
 	}
 
 	pub fn lease_id(&self) -> &str {
-		&self.lease_id
+		&self.id
 	}
 
 	pub async fn release(self) {
-		self.registry.release_by_lease_id(&self.lease_id).await;
+		self.registry.release_by_lease_id(self.lease_id()).await;
 	}
 }
 
@@ -248,7 +248,7 @@ impl SessionRegistry {
 						},
 					);
 					return Ok(Lease {
-						lease_id,
+						id: lease_id,
 						key,
 						registry: self.clone(),
 					});
@@ -299,7 +299,7 @@ impl SessionRegistry {
 						},
 					);
 					return Ok(Lease {
-						lease_id,
+						id: lease_id,
 						key,
 						registry: self.clone(),
 					});

@@ -52,6 +52,24 @@ pub struct EffectiveConfig {
 
 impl EffectiveConfig {
 	/// Look up the config for a specific LSP by its id.
+	///
+	/// # Examples
+	///
+	/// ```
+	/// use lspee_config::{EffectiveConfig, LspConfig};
+	///
+	/// let mut config = EffectiveConfig::default();
+	/// config.lsps.insert(
+	/// 	"rust-analyzer".to_string(),
+	/// 	LspConfig {
+	/// 		id: "rust-analyzer".to_string(),
+	/// 		command: "rust-analyzer".to_string(),
+	/// 		..Default::default()
+	/// 	},
+	/// );
+	/// assert!(config.lsp_config("rust-analyzer").is_some());
+	/// assert!(config.lsp_config("nonexistent").is_none());
+	/// ```
 	pub fn lsp_config(&self, id: &str) -> Option<&LspConfig> {
 		self.lsps.get(id)
 	}
@@ -96,6 +114,21 @@ impl Default for SessionConfig {
 	}
 }
 
+/// Configuration for a single LSP server.
+///
+/// # Examples
+///
+/// ```
+/// use lspee_config::LspConfig;
+///
+/// let config = LspConfig {
+/// 	id: "rust-analyzer".to_string(),
+/// 	command: "rust-analyzer".to_string(),
+/// 	args: vec!["--stdio".to_string()],
+/// 	..Default::default()
+/// };
+/// assert_eq!(config.command, "rust-analyzer");
+/// ```
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LspConfig {
 	#[serde(default)]
@@ -173,6 +206,21 @@ pub fn resolve(project_root_override: Option<&Path>) -> Result<ResolvedConfig, C
 	})
 }
 
+/// Compute a deterministic SHA-256 hash that identifies the combination of
+/// a project root and its effective configuration.
+///
+/// # Examples
+///
+/// ```
+/// use std::path::Path;
+/// use lspee_config::{EffectiveConfig, hash_identity};
+///
+/// let root = Path::new("/tmp/my-project");
+/// let config = EffectiveConfig::default();
+/// let hash = hash_identity(root, &config);
+/// assert_eq!(hash.len(), 64); // SHA-256 hex string
+/// assert_eq!(hash, hash_identity(root, &config)); // deterministic
+/// ```
 pub fn hash_identity(project_root: &Path, merged_config: &EffectiveConfig) -> String {
 	let mut hasher = Sha256::new();
 	hasher.update(project_root.to_string_lossy().as_bytes());
@@ -185,10 +233,14 @@ pub fn hash_identity(project_root: &Path, merged_config: &EffectiveConfig) -> St
 fn canonical_project_root(project_root_override: Option<&Path>) -> Result<PathBuf, ConfigError> {
 	let root = match project_root_override {
 		Some(path) => path.to_path_buf(),
-		None => std::env::current_dir().map_err(|source| ConfigError::Read {
-			path: PathBuf::from("."),
-			source,
-		})?,
+		None => {
+			std::env::current_dir().map_err(|source| {
+				ConfigError::Read {
+					path: PathBuf::from("."),
+					source,
+				}
+			})?
+		}
 	};
 
 	fs::canonicalize(&root).map_err(|source| ConfigError::Canonicalize { path: root, source })
@@ -199,14 +251,18 @@ fn load_partial_if_exists(path: &Path) -> Result<Option<PartialConfig>, ConfigEr
 		return Ok(None);
 	}
 
-	let raw = fs::read_to_string(path).map_err(|source| ConfigError::Read {
-		path: path.to_path_buf(),
-		source,
+	let raw = fs::read_to_string(path).map_err(|source| {
+		ConfigError::Read {
+			path: path.to_path_buf(),
+			source,
+		}
 	})?;
 
-	let parsed = toml::from_str(&raw).map_err(|source| ConfigError::Parse {
-		path: path.to_path_buf(),
-		source,
+	let parsed = toml::from_str(&raw).map_err(|source| {
+		ConfigError::Parse {
+			path: path.to_path_buf(),
+			source,
+		}
 	})?;
 
 	Ok(Some(parsed))
@@ -239,12 +295,14 @@ fn default_config() -> EffectiveConfig {
 fn apply_partial(merged: &mut EffectiveConfig, partial: PartialConfig) {
 	for lsp in partial.lsp {
 		let id = lsp.id.clone().unwrap_or_else(|| "default".to_string());
-		let entry = merged.lsps.entry(id.clone()).or_insert_with(|| LspConfig {
-			id: id.clone(),
-			command: String::new(),
-			args: Vec::new(),
-			env: BTreeMap::new(),
-			initialization_options: BTreeMap::new(),
+		let entry = merged.lsps.entry(id.clone()).or_insert_with(|| {
+			LspConfig {
+				id: id.clone(),
+				command: String::new(),
+				args: Vec::new(),
+				env: BTreeMap::new(),
+				initialization_options: BTreeMap::new(),
+			}
 		});
 
 		if let Some(command) = lsp.command {

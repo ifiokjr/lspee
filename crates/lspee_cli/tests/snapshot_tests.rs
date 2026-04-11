@@ -3,11 +3,11 @@
 //! Snapshot-based integration tests using fixtures and insta.
 
 use std::path::Path;
-use tokio::io::AsyncBufReadExt;
 
 use lspee_test_helpers::daemon::DaemonHandle;
 use lspee_test_helpers::fixtures::setup_fixture;
 use lspee_test_helpers::snapshots::snapshot_settings;
+use tokio::io::AsyncBufReadExt;
 
 // ---------------------------------------------------------------------------
 // Helper: run a CLI command and capture the result

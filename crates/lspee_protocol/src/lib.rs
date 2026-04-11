@@ -1,3 +1,11 @@
+//! Wire types for the lspee control and stream protocols.
+//!
+//! Every message exchanged between an editor shim and the lspee daemon is
+//! wrapped in a [`ControlEnvelope`] (control channel) or a [`StreamFrame`]
+//! (data channel). This crate defines those envelopes, the payload types
+//! they carry, and the string constants used to identify message types and
+//! error codes.
+
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
@@ -41,6 +49,25 @@ pub const ERROR_AUTH_FAILED: &str = "E_AUTH_FAILED";
 pub const ERROR_PERMISSION_DENIED: &str = "E_PERMISSION_DENIED";
 pub const ERROR_SESSION_EVICTED_MEMORY: &str = "E_SESSION_EVICTED_MEMORY";
 
+/// Versioned wrapper for every control-channel message.
+///
+/// # Examples
+///
+/// ```
+/// use lspee_protocol::{ControlEnvelope, PROTOCOL_VERSION, TYPE_PING};
+/// use serde_json::Value;
+///
+/// let envelope = ControlEnvelope {
+/// 	v: PROTOCOL_VERSION,
+/// 	id: Some("req-1".to_string()),
+/// 	message_type: TYPE_PING.to_string(),
+/// 	payload: serde_json::json!({ "ts_ms": 0 }),
+/// };
+/// let json = serde_json::to_string(&envelope).unwrap();
+/// let decoded: ControlEnvelope<Value> = serde_json::from_str(&json).unwrap();
+/// assert_eq!(decoded.v, PROTOCOL_VERSION);
+/// assert_eq!(decoded.message_type, TYPE_PING);
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ControlEnvelope<T> {
 	pub v: u32,
@@ -69,6 +96,30 @@ pub enum ControlPayload {
 	Error(ErrorResponse),
 }
 
+/// Request payload sent by a client to attach to (or create) an LSP session.
+///
+/// # Examples
+///
+/// ```
+/// use lspee_protocol::{Attach, SessionKeyWire, ClientMeta};
+///
+/// let attach = Attach {
+/// 	session_key: SessionKeyWire {
+/// 		project_root: "/tmp/proj".to_string(),
+/// 		config_hash: "deadbeef".to_string(),
+/// 		lsp_id: "rust-analyzer".to_string(),
+/// 	},
+/// 	client_meta: ClientMeta {
+/// 		client_name: "my-editor".to_string(),
+/// 		client_version: "0.1.0".to_string(),
+/// 		client_kind: None,
+/// 		pid: None,
+/// 		cwd: None,
+/// 	},
+/// 	capabilities: None,
+/// };
+/// assert_eq!(attach.session_key.lsp_id, "rust-analyzer");
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Attach {
 	pub session_key: SessionKeyWire,
@@ -77,6 +128,20 @@ pub struct Attach {
 	pub capabilities: Option<AttachCapabilities>,
 }
 
+/// Identifies a unique LSP session by project root, config hash, and LSP id.
+///
+/// # Examples
+///
+/// ```
+/// use lspee_protocol::SessionKeyWire;
+///
+/// let key = SessionKeyWire {
+/// 	project_root: "/home/user/project".to_string(),
+/// 	config_hash: "abc123".to_string(),
+/// 	lsp_id: "rust-analyzer".to_string(),
+/// };
+/// assert_eq!(key.lsp_id, "rust-analyzer");
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionKeyWire {
 	pub project_root: String,

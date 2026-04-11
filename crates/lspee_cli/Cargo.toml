@@ -42,3 +42,4 @@ insta = { version = "1.42", features = ["json", "redactions", "filters"] }
 tokio = { workspace = true, features = ["test-util"] }
 serde_json.workspace = true
 clap.workspace = true
+tempfile = "3"

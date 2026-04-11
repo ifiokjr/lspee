@@ -11,3 +11,4 @@ lcov.info
 .bin/
 .local-cache/
 .claude/worktrees/
+.pre-commit-config.yaml

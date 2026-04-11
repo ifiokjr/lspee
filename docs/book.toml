@@ -7,3 +7,6 @@ title = "lspee Book"
 [output.html]
 default-theme = "ayu"
 preferred-dark-theme = "ayu"
+site-url = "/lspee/"
+git-repository-url = "https://github.com/ifiokjr/lspee"
+edit-url-template = "https://github.com/ifiokjr/lspee/edit/main/docs/{path}"

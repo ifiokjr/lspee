@@ -1,5 +1,7 @@
 # lspee_lsp
 
+[![Book](https://img.shields.io/badge/book-ifiokjr.github.io%2Flspee-blue)](https://ifiokjr.github.io/lspee/)
+
 LSP transport/protocol integration crate for `lspee`.
 
 ## Responsibility
@@ -29,3 +31,5 @@ LSP transport/protocol integration crate for `lspee`.
 ## Notes
 
 Keep protocol concerns encapsulated here so daemon and CLI crates can remain focused on orchestration and UX respectively.
+
+**Website:** <https://ifiokjr.github.io/lspee/>

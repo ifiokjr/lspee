@@ -1,0 +1,1 @@
+`crates/lspee_config/defaults/languages.toml`

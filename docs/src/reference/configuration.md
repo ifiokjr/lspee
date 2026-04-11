@@ -2,9 +2,7 @@
 
 ## File precedence
 
-1. built-in defaults
-2. `~/.config/lspee/config.toml`
-3. `<project_root>/lspee.toml`
+{{#include ../includes/config-layers.md}}
 
 ## Supported keys
 
@@ -22,16 +20,15 @@ RUST_LOG = "error"
 
 [lsp.initialization_options]
 # server-specific options
-
-[session]
-# How long an idle session stays alive before eviction (default: 300).
-idle_ttl_secs = 300
-
-[memory]
-max_session_mb = 2048
-max_total_mb = 8192
-check_interval_ms = 1000
 ```
+
+### Session configuration
+
+{{#include ../includes/session-idle-config.md}}
+
+### Memory configuration
+
+{{#include ../includes/memory-config.md}}
 
 ## Identity hash
 
@@ -41,7 +38,7 @@ Hash input currently includes canonical project root and the merged effective co
 
 Built-in catalog file:
 
-- `crates/lspee_config/defaults/languages.toml`
+- {{#include ../includes/catalog-path.md}}
 
 The catalog powers:
 

@@ -4,12 +4,7 @@
 
 ## Use JSON output everywhere
 
-```bash
-lspee status --output json
-lspee lsp --output json
-lspee lsps --file src/main.rs --output json
-lspee call --lsp rust-analyzer --request @request.json --output json
-```
+{{#include ../includes/agent-cli-examples.md}}
 
 ## Deterministic root selection
 
@@ -27,7 +22,7 @@ lspee call --root /abs/project --lsp rust-analyzer --client-kind agent --request
 
 ## Concurrency
 
-Multiple agents can share one session when `(root, lsp_id, config_hash)` matches.
+Multiple agents can share one session when the session key {{#include ../includes/session-key-inline.md}} matches.
 
 ## Cleanup
 

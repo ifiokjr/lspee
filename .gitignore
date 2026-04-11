@@ -1,3 +1,4 @@
 .ant-colony/
 /target/
+/docs/book/
 .DS_Store

@@ -4,17 +4,13 @@
 
 Lowest to highest precedence:
 
-1. built-in defaults
-2. user config: `~/.config/lspee/config.toml`
-3. project config: `<project_root>/lspee.toml`
+{{#include ../includes/config-layers.md}}
 
 ## Session identity
 
 `lspee` computes:
 
-```text
-(project_root, lsp_id, config_hash)
-```
+{{#include ../includes/session-key.md}}
 
 `config_hash` changes when LSP-relevant config changes.
 

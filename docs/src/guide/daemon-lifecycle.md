@@ -18,10 +18,7 @@
 - Once unleased, a session is evicted after `idle_ttl_secs` of idle time (default: 300 seconds / 5 minutes).
 - Configurable in `lspee.toml` under `[session]`:
 
-```toml
-[session]
-idle_ttl_secs = 600  # 10 minutes
-```
+{{#include ../includes/session-idle-config.md}}
 
 - Eviction attempts graceful LSP shutdown, then force-stop fallback.
 

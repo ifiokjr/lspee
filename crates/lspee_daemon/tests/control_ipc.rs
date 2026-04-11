@@ -424,19 +424,30 @@ async fn dedicated_stream_forwards_bidirectional_lsp_frames() {
 		.await
 		.expect("stream flush should succeed");
 
-	let line = stream_lines
-		.next_line()
-		.await
-		.expect("stream read should succeed")
-		.expect("daemon should return LspOut frame");
-	let response: lspee_daemon::StreamFrame<Value> =
-		serde_json::from_str(&line).expect("stream response should decode");
+	// Read frames until we find the one matching our request id.
+	// The `cat` echo backend may replay stale notifications (e.g. the
+	// `initialized` notification which has no `id`) before delivering
+	// the actual response.
+	let mut found = false;
+	for _ in 0..10 {
+		let line = stream_lines
+			.next_line()
+			.await
+			.expect("stream read should succeed")
+			.expect("daemon should return LspOut frame");
+		let response: lspee_daemon::StreamFrame<Value> =
+			serde_json::from_str(&line).expect("stream response should decode");
 
-	assert!(matches!(
-		response.frame_type,
-		lspee_daemon::StreamFrameType::LspOut
-	));
-	assert_eq!(response.payload["id"], 88);
+		if response.payload.get("id").and_then(Value::as_u64) == Some(88) {
+			assert!(matches!(
+				response.frame_type,
+				lspee_daemon::StreamFrameType::LspOut
+			));
+			found = true;
+			break;
+		}
+	}
+	assert!(found, "expected LspOut frame with id=88");
 
 	drop(stream_writer);
 	shutdown_daemon(&mut writer, &mut lines).await;
@@ -517,7 +528,7 @@ check_interval_ms = 25
 // These tests verify the behaviors documented in
 // docs/src/advanced/daemon-internals.md:
 //   - idle sessions are evicted after idle_ttl_secs
-//   - daemon auto-shuts down after daemon_idle_ttl_secs with zero sessions
+//   - daemon auto-shuts down after auto_shutdown_secs with zero sessions
 //   - daemon stays alive while sessions are active
 // ---------------------------------------------------------------------------
 
@@ -578,7 +589,7 @@ idle_ttl_secs = 1
 	let _ = fs::remove_dir_all(root);
 }
 
-/// Verify that the daemon auto-shuts down after daemon_idle_ttl_secs
+/// Verify that the daemon auto-shuts down after auto_shutdown_secs
 /// when it has no sessions. The daemon task should complete on its own
 /// without an explicit Shutdown request.
 ///
@@ -592,7 +603,7 @@ async fn daemon_auto_shuts_down_when_idle() {
 		r"
 [session]
 idle_ttl_secs = 1
-daemon_idle_ttl_secs = 2
+auto_shutdown_secs = 2
 ",
 	);
 
@@ -628,7 +639,7 @@ daemon_idle_ttl_secs = 2
 }
 
 /// Verify that the daemon stays alive as long as active sessions exist,
-/// even after daemon_idle_ttl_secs would have expired for an empty daemon.
+/// even after auto_shutdown_secs would have expired for an empty daemon.
 ///
 /// Covers: docs/src/advanced/daemon-internals.md (daemon stays alive with sessions)
 #[tokio::test]
@@ -640,7 +651,7 @@ async fn daemon_stays_alive_while_sessions_active() {
 		r"
 [session]
 idle_ttl_secs = 300
-daemon_idle_ttl_secs = 2
+auto_shutdown_secs = 2
 ",
 	);
 
@@ -653,7 +664,7 @@ daemon_idle_ttl_secs = 2
 	// Attach but do NOT release — session remains active.
 	let _lease_id = attach(&mut writer, &mut lines, &root, "hash-alive").await;
 
-	// Wait longer than daemon_idle_ttl_secs.
+	// Wait longer than auto_shutdown_secs.
 	sleep(Duration::from_secs(4)).await;
 
 	// Daemon should still be alive — verify via stats.

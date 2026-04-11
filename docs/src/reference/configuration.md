@@ -28,7 +28,7 @@ RUST_LOG = "error"
 
 ```toml
 [session]
-daemon_idle_ttl_secs = 1800  # default: 30 minutes; set 0 to disable
+auto_shutdown_secs = 1800  # default: 30 minutes; set 0 to disable
 ```
 
 ### Memory configuration
@@ -52,6 +52,6 @@ The catalog powers:
 
 ## Notes
 
-`[session]` controls session lifecycle policy. `idle_ttl_secs` sets how long an unleased session stays alive. The default of 300 seconds (5 minutes) covers most agent workflows. Set higher for workflows with longer gaps between requests. `daemon_idle_ttl_secs` sets how long the daemon itself stays alive with zero sessions before auto-shutting down (default: 1800 seconds / 30 minutes). Set to `0` to keep the daemon alive indefinitely.
+`[session]` controls session lifecycle policy. `idle_ttl_secs` sets how long an unleased session stays alive. The default of 300 seconds (5 minutes) covers most agent workflows. Set higher for workflows with longer gaps between requests. `auto_shutdown_secs` sets how long the daemon itself stays alive with zero sessions before auto-shutting down (default: 1800 seconds / 30 minutes). Set to `0` to keep the daemon alive indefinitely.
 
 `[memory]` controls daemon policy, not LSP protocol behavior. It exists to protect local machine resources when many shared sessions are active.

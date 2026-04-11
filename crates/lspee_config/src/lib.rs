@@ -84,14 +84,14 @@ pub struct SessionConfig {
 	/// How long the daemon stays alive with zero sessions before
 	/// shutting itself down. `None` means the daemon runs forever.
 	/// Default: 1800 (30 minutes).
-	pub daemon_idle_ttl_secs: Option<u64>,
+	pub auto_shutdown_secs: Option<u64>,
 }
 
 impl Default for SessionConfig {
 	fn default() -> Self {
 		Self {
 			idle_ttl_secs: default_idle_ttl_secs(),
-			daemon_idle_ttl_secs: Some(1800),
+			auto_shutdown_secs: Some(1800),
 		}
 	}
 }
@@ -131,7 +131,7 @@ pub struct PartialMemoryConfig {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PartialSessionConfig {
 	pub idle_ttl_secs: Option<u64>,
-	pub daemon_idle_ttl_secs: Option<u64>,
+	pub auto_shutdown_secs: Option<u64>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -285,8 +285,8 @@ fn apply_partial(merged: &mut EffectiveConfig, partial: PartialConfig) {
 		if let Some(idle_ttl_secs) = session.idle_ttl_secs {
 			merged.session.idle_ttl_secs = idle_ttl_secs;
 		}
-		if let Some(daemon_idle_ttl_secs) = session.daemon_idle_ttl_secs {
-			merged.session.daemon_idle_ttl_secs = Some(daemon_idle_ttl_secs);
+		if let Some(auto_shutdown_secs) = session.auto_shutdown_secs {
+			merged.session.auto_shutdown_secs = Some(auto_shutdown_secs);
 		}
 	}
 }

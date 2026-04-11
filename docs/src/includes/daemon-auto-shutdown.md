@@ -4,7 +4,7 @@ accumulating on your system.
 
 ```toml
 [session]
-daemon_idle_ttl_secs = 1800  # default: 30 minutes
+auto_shutdown_secs = 1800  # default: 30 minutes
 ```
 
 The lifecycle works as follows:
@@ -14,7 +14,7 @@ The lifecycle works as follows:
 3. Sessions are evicted individually after `idle_ttl_secs` with no
    active leases (default: 300s / 5 minutes).
 4. Once the last session is evicted and the registry is empty, the
-   daemon starts a countdown of `daemon_idle_ttl_secs`.
+   daemon starts a countdown of `auto_shutdown_secs`.
 5. If a new client attaches before the countdown expires, the timer
    resets.
 6. If the countdown reaches zero, the daemon performs a clean shutdown:
@@ -25,8 +25,8 @@ or the machine reboots), set:
 
 ```toml
 [session]
-daemon_idle_ttl_secs = 0
+auto_shutdown_secs = 0
 ```
 
-When `daemon_idle_ttl_secs` is `0`, the daemon only stops via
+When `auto_shutdown_secs` is `0`, the daemon only stops via
 `lspee stop`, a `Shutdown` control message, or a system signal.

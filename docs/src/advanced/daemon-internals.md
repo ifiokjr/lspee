@@ -69,7 +69,7 @@ These behaviors are verified by integration tests in
 | Test | What it verifies |
 |------|-----------------|
 | `idle_session_is_evicted_after_ttl` | Sessions with no active leases are evicted after `idle_ttl_secs` |
-| `daemon_auto_shuts_down_when_idle` | Daemon exits on its own after `daemon_idle_ttl_secs` with zero sessions |
+| `daemon_auto_shuts_down_when_idle` | Daemon exits on its own after `auto_shutdown_secs` with zero sessions |
 | `daemon_stays_alive_while_sessions_active` | Daemon does not auto-shutdown while sessions exist, even past the TTL |
 | `same_session_key_reuses_spawned_worker` | Matching session keys reuse the same LSP process |
 | `different_config_hashes_spawn_distinct_sessions` | Different config hashes create isolated sessions |

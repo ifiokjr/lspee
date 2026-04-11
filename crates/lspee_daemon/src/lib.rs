@@ -111,7 +111,7 @@ impl Daemon {
 			.config
 			.merged
 			.session
-			.daemon_idle_ttl_secs
+			.auto_shutdown_secs
 			.map(std::time::Duration::from_secs);
 		let eviction_loop =
 			EvictionLoop::start(self.registry.clone(), daemon_idle_ttl, shutdown_tx.clone());

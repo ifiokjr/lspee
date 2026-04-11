@@ -436,12 +436,14 @@ impl DoMethod {
 			Self::CodeAction(a) => a.position.shared.clone(),
 			Self::Formatting(a) => a.shared.clone(),
 			Self::Symbols(a) | Self::Diagnostics(a) => a.shared.clone(),
-			Self::WorkspaceSymbols(a) => SharedArgs {
-				lsp: Some(a.lsp.clone()),
-				root: a.root.clone(),
-				no_start_daemon: a.no_start_daemon,
-				output: a.output,
-			},
+			Self::WorkspaceSymbols(a) => {
+				SharedArgs {
+					lsp: Some(a.lsp.clone()),
+					root: a.root.clone(),
+					no_start_daemon: a.no_start_daemon,
+					output: a.output,
+				}
+			}
 		}
 	}
 

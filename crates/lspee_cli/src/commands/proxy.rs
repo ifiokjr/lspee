@@ -307,4 +307,123 @@ mod tests {
 				.contains("Restart the LSP in Helix.")
 		);
 	}
+
+	#[test]
+	fn initialize_response_falls_back_to_whole_value() {
+		// When initialize_result has no "result" key, the entire value is used.
+		let caps = json!({"capabilities": {"completionProvider": true}});
+		let response = initialize_response_for_editor(&json!("init-1"), &caps);
+
+		assert_eq!(response["id"], "init-1");
+		assert_eq!(
+			response["result"]["capabilities"]["completionProvider"],
+			true
+		);
+		assert_eq!(response["jsonrpc"], "2.0");
+	}
+
+	#[test]
+	fn initialize_response_with_string_id() {
+		let response = initialize_response_for_editor(
+			&json!("string-id"),
+			&json!({"result": {"capabilities": {}}}),
+		);
+		assert_eq!(response["id"], "string-id");
+		assert!(response["result"]["capabilities"].is_object());
+	}
+
+	#[test]
+	fn shutdown_response_with_string_id() {
+		let response = shutdown_response_for_editor(&json!("shutdown-99"));
+		assert_eq!(response["id"], "shutdown-99");
+		assert!(response["result"].is_null());
+		assert_eq!(response["jsonrpc"], "2.0");
+	}
+
+	#[test]
+	fn stream_error_warning_uses_default_resume_hint_when_none() {
+		let warning = stream_error_to_editor_warning(&StreamErrorPayload {
+			code: "E_CRASH".to_string(),
+			message: "server crashed".to_string(),
+			retryable: false,
+			details: None,
+		});
+
+		let msg = warning["params"]["message"]
+			.as_str()
+			.expect("warning message should be string");
+		assert!(msg.contains("server crashed"));
+		assert!(msg.contains("Retry attaching to the daemon session."));
+	}
+
+	#[test]
+	fn stream_error_warning_uses_default_when_no_resume_hint_key() {
+		let warning = stream_error_to_editor_warning(&StreamErrorPayload {
+			code: "E_OOM".to_string(),
+			message: "out of memory".to_string(),
+			retryable: true,
+			details: Some(json!({"some_other_key": "value"})),
+		});
+
+		let msg = warning["params"]["message"]
+			.as_str()
+			.expect("warning message should be string");
+		assert!(msg.contains("out of memory"));
+		assert!(msg.contains("Retry attaching to the daemon session."));
+	}
+
+	#[test]
+	fn stream_error_warning_message_type_is_warning() {
+		let warning = stream_error_to_editor_warning(&StreamErrorPayload {
+			code: "E_TEST".to_string(),
+			message: "test".to_string(),
+			retryable: false,
+			details: None,
+		});
+
+		// LSP MessageType 2 = Warning
+		assert_eq!(warning["params"]["type"], 2);
+	}
+
+	#[test]
+	fn proxy_command_struct_defaults() {
+		use clap::Parser;
+
+		#[derive(Parser)]
+		struct Cli {
+			#[command(flatten)]
+			proxy: super::ProxyCommand,
+		}
+
+		let cli = Cli::parse_from(["test", "--lsp", "rust-analyzer"]);
+		assert_eq!(cli.proxy.lsp, "rust-analyzer");
+		assert!(cli.proxy.root.is_none());
+		assert!(!cli.proxy.no_start_daemon);
+	}
+
+	#[test]
+	fn proxy_command_all_args() {
+		use clap::Parser;
+
+		#[derive(Parser)]
+		struct Cli {
+			#[command(flatten)]
+			proxy: super::ProxyCommand,
+		}
+
+		let cli = Cli::parse_from([
+			"test",
+			"--lsp",
+			"taplo",
+			"--root",
+			"/tmp/project",
+			"--no-start-daemon",
+		]);
+		assert_eq!(cli.proxy.lsp, "taplo");
+		assert_eq!(
+			cli.proxy.root.as_deref(),
+			Some(std::path::Path::new("/tmp/project"))
+		);
+		assert!(cli.proxy.no_start_daemon);
+	}
 }

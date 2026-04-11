@@ -480,6 +480,7 @@ dependencies = [
  "lspee_test_helpers",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "toml",
  "toml_edit",

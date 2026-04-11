@@ -21,6 +21,21 @@ use tokio::time::Duration;
 use tokio::time::timeout;
 use tracing::instrument;
 
+/// A parsed LSP JSON-RPC message with optional id and method fields extracted.
+///
+/// # Examples
+///
+/// ```
+/// use lspee_lsp::LspMessage;
+/// use serde_json::json;
+///
+/// let msg = LspMessage {
+/// 	id: Some(json!(1)),
+/// 	method: Some("initialize".to_string()),
+/// 	payload: json!({"jsonrpc": "2.0", "id": 1, "method": "initialize"}),
+/// };
+/// assert_eq!(msg.method.as_deref(), Some("initialize"));
+/// ```
 #[derive(Debug, Clone)]
 pub struct LspMessage {
 	pub id: Option<Value>,
@@ -262,6 +277,21 @@ impl LspTransport {
 	}
 }
 
+/// Encode a JSON value into an LSP base-protocol frame with a
+/// `Content-Length` header.
+///
+/// # Examples
+///
+/// ```
+/// use serde_json::json;
+/// use lspee_lsp::encode_lsp_frame;
+///
+/// let msg = json!({"jsonrpc": "2.0", "id": 1, "method": "initialize"});
+/// let frame = encode_lsp_frame(&msg).unwrap();
+/// let text = String::from_utf8_lossy(&frame);
+/// assert!(text.starts_with("Content-Length: "));
+/// assert!(text.contains("\r\n\r\n"));
+/// ```
 pub fn encode_lsp_frame(message: &Value) -> Result<Vec<u8>> {
 	let body = serde_json::to_vec(message).context("failed to serialize lsp json payload")?;
 	let header = format!("Content-Length: {}\r\n\r\n", body.len());

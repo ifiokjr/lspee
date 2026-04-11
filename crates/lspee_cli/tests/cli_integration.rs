@@ -928,8 +928,13 @@ async fn daemon_attach_bad_payload() {
 	let daemon_task = spawn_daemon(&root);
 	wait_for_socket(&root).await;
 
-	use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_ATTACH, TYPE_ERROR};
-	use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+	use lspee_daemon::ControlEnvelope;
+	use lspee_daemon::PROTOCOL_VERSION;
+	use lspee_daemon::TYPE_ATTACH;
+	use lspee_daemon::TYPE_ERROR;
+	use tokio::io::AsyncBufReadExt;
+	use tokio::io::AsyncWriteExt;
+	use tokio::io::BufReader;
 
 	let socket = root.join(".lspee").join("daemon.sock");
 	let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
@@ -966,8 +971,13 @@ async fn daemon_call_bad_payload() {
 	let daemon_task = spawn_daemon(&root);
 	wait_for_socket(&root).await;
 
-	use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_CALL, TYPE_ERROR};
-	use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+	use lspee_daemon::ControlEnvelope;
+	use lspee_daemon::PROTOCOL_VERSION;
+	use lspee_daemon::TYPE_CALL;
+	use lspee_daemon::TYPE_ERROR;
+	use tokio::io::AsyncBufReadExt;
+	use tokio::io::AsyncWriteExt;
+	use tokio::io::BufReader;
 
 	let socket = root.join(".lspee").join("daemon.sock");
 	let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
@@ -1002,8 +1012,13 @@ async fn daemon_release_bad_payload() {
 	let daemon_task = spawn_daemon(&root);
 	wait_for_socket(&root).await;
 
-	use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_ERROR, TYPE_RELEASE};
-	use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+	use lspee_daemon::ControlEnvelope;
+	use lspee_daemon::PROTOCOL_VERSION;
+	use lspee_daemon::TYPE_ERROR;
+	use lspee_daemon::TYPE_RELEASE;
+	use tokio::io::AsyncBufReadExt;
+	use tokio::io::AsyncWriteExt;
+	use tokio::io::BufReader;
 
 	let socket = root.join(".lspee").join("daemon.sock");
 	let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
@@ -1038,8 +1053,13 @@ async fn daemon_shutdown_bad_payload() {
 	let daemon_task = spawn_daemon(&root);
 	wait_for_socket(&root).await;
 
-	use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, TYPE_ERROR, TYPE_SHUTDOWN};
-	use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+	use lspee_daemon::ControlEnvelope;
+	use lspee_daemon::PROTOCOL_VERSION;
+	use lspee_daemon::TYPE_ERROR;
+	use lspee_daemon::TYPE_SHUTDOWN;
+	use tokio::io::AsyncBufReadExt;
+	use tokio::io::AsyncWriteExt;
+	use tokio::io::BufReader;
 
 	let socket = root.join(".lspee").join("daemon.sock");
 	let stream = tokio::net::UnixStream::connect(&socket).await.unwrap();

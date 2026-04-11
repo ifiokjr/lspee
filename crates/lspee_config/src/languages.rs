@@ -85,9 +85,11 @@ fn load_registry(
 	project_config: Option<&Path>,
 ) -> Result<LanguageRegistryFile, ConfigError> {
 	let mut registry: LanguageRegistryFile =
-		toml::from_str(DEFAULT_LANGUAGES_TOML).map_err(|source| ConfigError::Parse {
-			path: Path::new("crates/lspee_config/defaults/languages.toml").to_path_buf(),
-			source,
+		toml::from_str(DEFAULT_LANGUAGES_TOML).map_err(|source| {
+			ConfigError::Parse {
+				path: Path::new("crates/lspee_config/defaults/languages.toml").to_path_buf(),
+				source,
+			}
 		})?;
 
 	apply_overrides(&mut registry, user_config)?;
@@ -118,14 +120,18 @@ fn apply_overrides(
 		return Ok(());
 	}
 
-	let raw = std::fs::read_to_string(path).map_err(|source| ConfigError::Read {
-		path: path.to_path_buf(),
-		source,
+	let raw = std::fs::read_to_string(path).map_err(|source| {
+		ConfigError::Read {
+			path: path.to_path_buf(),
+			source,
+		}
 	})?;
 
-	let parsed: PartialConfig = toml::from_str(&raw).map_err(|source| ConfigError::Parse {
-		path: path.to_path_buf(),
-		source,
+	let parsed: PartialConfig = toml::from_str(&raw).map_err(|source| {
+		ConfigError::Parse {
+			path: path.to_path_buf(),
+			source,
+		}
 	})?;
 
 	for partial_lsp in parsed.lsp {

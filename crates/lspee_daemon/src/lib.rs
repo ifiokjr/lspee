@@ -268,16 +268,18 @@ async fn dispatch_control_request(
 		TYPE_CALL => dispatch_call(id, payload, registry).await,
 		TYPE_STATS => dispatch_stats(id, registry, started_at, memory_settings).await,
 		TYPE_SHUTDOWN => dispatch_shutdown(id, payload, shutdown_tx).await,
-		_ => DispatchOutcome {
-			response: error_envelope(
-				id,
-				ERROR_UNKNOWN_TYPE,
-				"Unknown control message type",
-				false,
-				None,
-			),
-			shutdown_requested: false,
-		},
+		_ => {
+			DispatchOutcome {
+				response: error_envelope(
+					id,
+					ERROR_UNKNOWN_TYPE,
+					"Unknown control message type",
+					false,
+					None,
+				),
+				shutdown_requested: false,
+			}
+		}
 	}
 }
 
@@ -368,10 +370,12 @@ async fn dispatch_attach(
 					)
 					.await
 					{
-						Ok(endpoint) => StreamInfo {
-							mode: StreamMode::Dedicated,
-							endpoint: Some(format!("unix://{}", endpoint.display())),
-						},
+						Ok(endpoint) => {
+							StreamInfo {
+								mode: StreamMode::Dedicated,
+								endpoint: Some(format!("unix://{}", endpoint.display())),
+							}
+						}
 						Err(error) => {
 							let _ = registry.release_by_lease_id(lease.lease_id()).await;
 							return DispatchOutcome {
@@ -387,10 +391,12 @@ async fn dispatch_attach(
 						}
 					}
 				}
-				StreamMode::MuxControl => StreamInfo {
-					mode: StreamMode::MuxControl,
-					endpoint: None,
-				},
+				StreamMode::MuxControl => {
+					StreamInfo {
+						mode: StreamMode::MuxControl,
+						endpoint: None,
+					}
+				}
 			};
 
 			let body = AttachOk {
@@ -405,13 +411,15 @@ async fn dispatch_attach(
 			};
 			ok_envelope(id, TYPE_ATTACH_OK, body)
 		}
-		Err(error) => error_envelope(
-			id,
-			ERROR_SESSION_SPAWN_FAILED,
-			&error.to_string(),
-			true,
-			None,
-		),
+		Err(error) => {
+			error_envelope(
+				id,
+				ERROR_SESSION_SPAWN_FAILED,
+				&error.to_string(),
+				true,
+				None,
+			)
+		}
 	};
 
 	DispatchOutcome {
@@ -443,14 +451,16 @@ async fn dispatch_release(
 	};
 
 	let response = match registry.release_by_lease_id(&payload.lease_id).await {
-		Some(ref_count) => ok_envelope(
-			id,
-			TYPE_RELEASE_OK,
-			ReleaseOk {
-				lease_id: payload.lease_id,
-				ref_count: ref_count as u64,
-			},
-		),
+		Some(ref_count) => {
+			ok_envelope(
+				id,
+				TYPE_RELEASE_OK,
+				ReleaseOk {
+					lease_id: payload.lease_id,
+					ref_count: ref_count as u64,
+				},
+			)
+		}
 		None => error_envelope(id, ERROR_LEASE_NOT_FOUND, "Lease not found", false, None),
 	};
 

@@ -492,3 +492,163 @@ check_interval_ms = 25
     let _ = daemon_task.await;
     let _ = fs::remove_dir_all(root);
 }
+
+// ---------------------------------------------------------------------------
+// Daemon persistence and auto-shutdown tests
+//
+// These tests verify the behaviors documented in
+// docs/src/advanced/daemon-internals.md:
+//   - idle sessions are evicted after idle_ttl_secs
+//   - daemon auto-shuts down after daemon_idle_ttl_secs with zero sessions
+//   - daemon stays alive while sessions are active
+// ---------------------------------------------------------------------------
+
+/// Verify that a session with no active leases is evicted after the
+/// configured idle TTL expires, and that the daemon reports the eviction
+/// in its stats counters.
+///
+/// Covers: docs/src/includes/session-idle-config.md
+#[tokio::test]
+async fn idle_session_is_evicted_after_ttl() {
+    let root = unique_temp_dir("idle-evict");
+    // Use a very short idle TTL so the test completes quickly.
+    write_project_config_with_extras(
+        &root,
+        r#"
+[session]
+idle_ttl_secs = 1
+"#,
+    );
+
+    let daemon_task = spawn_daemon(&root);
+    let socket_path = root.join(".lspee").join("daemon.sock");
+    let stream = connect_with_retry(&socket_path).await;
+    let (reader, mut writer) = stream.into_split();
+    let mut lines = BufReader::new(reader).lines();
+
+    // Attach and immediately release so the session becomes unleased.
+    let lease_id = attach(&mut writer, &mut lines, &root, "hash-idle").await;
+    release(&mut writer, &mut lines, &lease_id).await;
+
+    // Wait for eviction to kick in (idle_ttl=1s, eviction tick=1s, plus margin).
+    sleep(Duration::from_secs(5)).await;
+
+    let stats = request(
+        &mut writer,
+        &mut lines,
+        "stats-idle",
+        TYPE_STATS,
+        serde_json::to_value(Stats::default()).expect("stats payload should serialize"),
+    )
+    .await;
+
+    assert_eq!(stats.message_type, TYPE_STATS_OK);
+    assert_eq!(stats.payload["sessions"], 0, "session should have been evicted");
+    assert!(
+        stats.payload["counters"]["sessions_gc_idle_total"]
+            .as_u64()
+            .unwrap_or(0)
+            >= 1,
+        "idle eviction counter should be incremented"
+    );
+
+    shutdown_daemon(&mut writer, &mut lines).await;
+    let _ = daemon_task.await;
+    let _ = fs::remove_dir_all(root);
+}
+
+/// Verify that the daemon auto-shuts down after daemon_idle_ttl_secs
+/// when it has no sessions. The daemon task should complete on its own
+/// without an explicit Shutdown request.
+///
+/// Covers: docs/src/advanced/daemon-internals.md (daemon auto-shutdown)
+#[tokio::test]
+async fn daemon_auto_shuts_down_when_idle() {
+    let root = unique_temp_dir("daemon-idle");
+    // Set a very short daemon idle TTL (2s) and session TTL (1s).
+    write_project_config_with_extras(
+        &root,
+        r#"
+[session]
+idle_ttl_secs = 1
+daemon_idle_ttl_secs = 2
+"#,
+    );
+
+    let daemon_task = spawn_daemon(&root);
+    let socket_path = root.join(".lspee").join("daemon.sock");
+
+    // Connect and create a session, then release it.
+    let stream = connect_with_retry(&socket_path).await;
+    let (reader, mut writer) = stream.into_split();
+    let mut lines = BufReader::new(reader).lines();
+
+    let lease_id = attach(&mut writer, &mut lines, &root, "hash-autostop").await;
+    release(&mut writer, &mut lines, &lease_id).await;
+
+    // Drop the control connection — daemon should eventually shut itself down.
+    drop(writer);
+    drop(lines);
+
+    // Wait for session eviction (1s) + daemon idle TTL (2s) + margin.
+    let result = tokio::time::timeout(Duration::from_secs(8), daemon_task).await;
+    assert!(
+        result.is_ok(),
+        "daemon should have auto-shut down within the timeout"
+    );
+
+    // Socket should have been removed.
+    assert!(
+        !socket_path.exists(),
+        "daemon socket should be removed after auto-shutdown"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+/// Verify that the daemon stays alive as long as active sessions exist,
+/// even after daemon_idle_ttl_secs would have expired for an empty daemon.
+///
+/// Covers: docs/src/advanced/daemon-internals.md (daemon stays alive with sessions)
+#[tokio::test]
+async fn daemon_stays_alive_while_sessions_active() {
+    let root = unique_temp_dir("daemon-alive");
+    // Very short daemon idle TTL, but we'll keep a session active.
+    write_project_config_with_extras(
+        &root,
+        r#"
+[session]
+idle_ttl_secs = 300
+daemon_idle_ttl_secs = 2
+"#,
+    );
+
+    let daemon_task = spawn_daemon(&root);
+    let socket_path = root.join(".lspee").join("daemon.sock");
+    let stream = connect_with_retry(&socket_path).await;
+    let (reader, mut writer) = stream.into_split();
+    let mut lines = BufReader::new(reader).lines();
+
+    // Attach but do NOT release — session remains active.
+    let _lease_id = attach(&mut writer, &mut lines, &root, "hash-alive").await;
+
+    // Wait longer than daemon_idle_ttl_secs.
+    sleep(Duration::from_secs(4)).await;
+
+    // Daemon should still be alive — verify via stats.
+    let stats = request(
+        &mut writer,
+        &mut lines,
+        "stats-alive",
+        TYPE_STATS,
+        serde_json::to_value(Stats::default()).expect("stats payload should serialize"),
+    )
+    .await;
+
+    assert_eq!(stats.message_type, TYPE_STATS_OK);
+    assert_eq!(stats.payload["sessions"], 1, "session should still exist");
+
+    shutdown_daemon(&mut writer, &mut lines).await;
+    let _ = daemon_task.await;
+    let _ = fs::remove_dir_all(root);
+}

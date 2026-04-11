@@ -90,7 +90,16 @@ impl Daemon {
             "starting daemon runtime"
         );
 
-        let eviction_loop = EvictionLoop::start(self.registry.clone());
+        let (shutdown_tx, mut shutdown_rx) = watch::channel(false);
+
+        let daemon_idle_ttl = self
+            .config
+            .merged
+            .session
+            .daemon_idle_ttl_secs
+            .map(std::time::Duration::from_secs);
+        let eviction_loop =
+            EvictionLoop::start(self.registry.clone(), daemon_idle_ttl, shutdown_tx.clone());
         let memory_monitor =
             memory::MemoryMonitor::start(self.registry.clone(), self.memory_settings());
 
@@ -104,8 +113,6 @@ impl Daemon {
 
         let listener = UnixListener::bind(&socket_path)?;
         tracing::info!(path = %socket_path.display(), "daemon control socket listening");
-
-        let (shutdown_tx, mut shutdown_rx) = watch::channel(false);
         let memory_settings = self.memory_settings();
 
         loop {

@@ -1,840 +1,849 @@
-use std::{
-    collections::{HashMap, HashSet},
-    path::PathBuf,
-    sync::{
-        Arc,
-        atomic::{AtomicU64, Ordering},
-    },
-    time::{Duration, Instant},
-};
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::future::Future;
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
+use std::time::Instant;
 
-use anyhow::{Result, anyhow};
-use lspee_protocol::{ClientKind, StreamErrorPayload};
+use anyhow::Result;
+use anyhow::anyhow;
+use lspee_protocol::ClientKind;
+use lspee_protocol::StreamErrorPayload;
 use serde_json::Value;
-use tokio::sync::{Mutex, Notify, RwLock, broadcast};
+use tokio::sync::Mutex;
+use tokio::sync::Notify;
+use tokio::sync::RwLock;
+use tokio::sync::broadcast;
 use tracing::instrument;
 
 const DEFAULT_IDLE_TTL: Duration = Duration::from_secs(300);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SessionKey {
-    pub root: PathBuf,
-    pub lsp_id: String,
-    pub config_hash: String,
+	pub root: PathBuf,
+	pub lsp_id: String,
+	pub config_hash: String,
 }
 
 impl SessionKey {
-    #[must_use]
-    pub fn new(root: PathBuf, lsp_id: impl Into<String>, config_hash: impl Into<String>) -> Self {
-        Self {
-            root,
-            lsp_id: lsp_id.into(),
-            config_hash: config_hash.into(),
-        }
-    }
+	#[must_use]
+	pub fn new(root: PathBuf, lsp_id: impl Into<String>, config_hash: impl Into<String>) -> Self {
+		Self {
+			root,
+			lsp_id: lsp_id.into(),
+			config_hash: config_hash.into(),
+		}
+	}
 }
 
 #[derive(Clone)]
 pub struct SessionHandle {
-    pub key: SessionKey,
-    pub transport: Arc<lspee_lsp::LspTransport>,
-    pub runtime: Arc<lspee_lsp::LspRuntime>,
-    pub initialize_result: Value,
-    pub events: broadcast::Sender<StreamErrorPayload>,
+	pub key: SessionKey,
+	pub transport: Arc<lspee_lsp::LspTransport>,
+	pub runtime: Arc<lspee_lsp::LspRuntime>,
+	pub initialize_result: Value,
+	pub events: broadcast::Sender<StreamErrorPayload>,
 }
 
 impl std::fmt::Debug for SessionHandle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SessionHandle")
-            .field("key", &self.key)
-            .finish_non_exhaustive()
-    }
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("SessionHandle")
+			.field("key", &self.key)
+			.finish_non_exhaustive()
+	}
 }
 
 #[derive(Debug, Clone)]
 pub struct SessionSnapshot {
-    pub key: SessionKey,
-    pub ref_count: usize,
-    pub terminating: bool,
-    pub idle_for: Duration,
-    pub idle_ttl: Duration,
-    pub client_kinds: Vec<ClientKind>,
+	pub key: SessionKey,
+	pub ref_count: usize,
+	pub terminating: bool,
+	pub idle_for: Duration,
+	pub idle_ttl: Duration,
+	pub client_kinds: Vec<ClientKind>,
 }
 
 #[derive(Debug, Clone)]
 pub struct RegistrySnapshot {
-    pub sessions: Vec<SessionSnapshot>,
-    pub lease_count: usize,
-    pub counters: RegistryCounters,
+	pub sessions: Vec<SessionSnapshot>,
+	pub lease_count: usize,
+	pub counters: RegistryCounters,
 }
 
 #[derive(Debug, Clone)]
 pub struct MemorySessionSnapshot {
-    pub handle: SessionHandle,
-    pub ref_count: usize,
-    pub idle_for: Duration,
-    pub client_kinds: Vec<ClientKind>,
+	pub handle: SessionHandle,
+	pub ref_count: usize,
+	pub idle_for: Duration,
+	pub client_kinds: Vec<ClientKind>,
 }
 
 #[derive(Debug)]
 struct SessionRecord {
-    handle: SessionHandle,
-    ref_count: usize,
-    last_used: Instant,
-    terminating: bool,
-    termination_notice: Option<StreamErrorPayload>,
+	handle: SessionHandle,
+	ref_count: usize,
+	last_used: Instant,
+	terminating: bool,
+	termination_notice: Option<StreamErrorPayload>,
 }
 
 impl SessionRecord {
-    fn new(handle: SessionHandle) -> Self {
-        Self {
-            handle,
-            ref_count: 0,
-            last_used: Instant::now(),
-            terminating: false,
-            termination_notice: None,
-        }
-    }
+	fn new(handle: SessionHandle) -> Self {
+		Self {
+			handle,
+			ref_count: 0,
+			last_used: Instant::now(),
+			terminating: false,
+			termination_notice: None,
+		}
+	}
 
-    fn touch(&mut self) {
-        self.last_used = Instant::now();
-    }
+	fn touch(&mut self) {
+		self.last_used = Instant::now();
+	}
 }
 
 #[derive(Debug)]
 struct SpawnGate {
-    notify: Arc<Notify>,
-    started: bool,
+	notify: Arc<Notify>,
+	started: bool,
 }
 
 impl SpawnGate {
-    fn new() -> Self {
-        Self {
-            notify: Arc::new(Notify::new()),
-            started: false,
-        }
-    }
+	fn new() -> Self {
+		Self {
+			notify: Arc::new(Notify::new()),
+			started: false,
+		}
+	}
 }
 
 #[derive(Debug, Clone)]
 struct LeaseRecord {
-    key: SessionKey,
-    client_kind: Option<ClientKind>,
+	key: SessionKey,
+	client_kind: Option<ClientKind>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Lease {
-    lease_id: String,
-    key: SessionKey,
-    registry: SessionRegistry,
+	lease_id: String,
+	key: SessionKey,
+	registry: SessionRegistry,
 }
 
 impl Lease {
-    pub fn key(&self) -> &SessionKey {
-        &self.key
-    }
+	pub fn key(&self) -> &SessionKey {
+		&self.key
+	}
 
-    pub fn lease_id(&self) -> &str {
-        &self.lease_id
-    }
+	pub fn lease_id(&self) -> &str {
+		&self.lease_id
+	}
 
-    pub async fn release(self) {
-        self.registry.release_by_lease_id(&self.lease_id).await;
-    }
+	pub async fn release(self) {
+		self.registry.release_by_lease_id(&self.lease_id).await;
+	}
 }
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RegistryCounters {
-    pub sessions_spawned_total: u64,
-    pub sessions_reused_total: u64,
-    pub sessions_gc_idle_total: u64,
-    pub sessions_evicted_memory_total: u64,
-    pub session_crashes_total: u64,
-    pub attach_requests_total: u64,
+	pub sessions_spawned_total: u64,
+	pub sessions_reused_total: u64,
+	pub sessions_gc_idle_total: u64,
+	pub sessions_evicted_memory_total: u64,
+	pub session_crashes_total: u64,
+	pub attach_requests_total: u64,
 }
 
 #[derive(Debug, Clone)]
 pub struct SessionRegistry {
-    sessions: Arc<RwLock<HashMap<SessionKey, SessionRecord>>>,
-    leases: Arc<RwLock<HashMap<String, LeaseRecord>>>,
-    spawn_gates: Arc<Mutex<HashMap<SessionKey, Arc<Mutex<SpawnGate>>>>>,
-    counters: Arc<RwLock<RegistryCounters>>,
-    lease_seq: Arc<AtomicU64>,
-    idle_ttl: Duration,
+	sessions: Arc<RwLock<HashMap<SessionKey, SessionRecord>>>,
+	leases: Arc<RwLock<HashMap<String, LeaseRecord>>>,
+	spawn_gates: Arc<Mutex<HashMap<SessionKey, Arc<Mutex<SpawnGate>>>>>,
+	counters: Arc<RwLock<RegistryCounters>>,
+	lease_seq: Arc<AtomicU64>,
+	idle_ttl: Duration,
 }
 
 impl Default for SessionRegistry {
-    fn default() -> Self {
-        Self::new()
-    }
+	fn default() -> Self {
+		Self::new()
+	}
 }
 
 impl SessionRegistry {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::with_idle_ttl(DEFAULT_IDLE_TTL)
-    }
+	#[must_use]
+	pub fn new() -> Self {
+		Self::with_idle_ttl(DEFAULT_IDLE_TTL)
+	}
 
-    #[must_use]
-    pub fn with_idle_ttl(idle_ttl: Duration) -> Self {
-        Self {
-            sessions: Arc::new(RwLock::new(HashMap::new())),
-            leases: Arc::new(RwLock::new(HashMap::new())),
-            spawn_gates: Arc::new(Mutex::new(HashMap::new())),
-            counters: Arc::new(RwLock::new(RegistryCounters::default())),
-            lease_seq: Arc::new(AtomicU64::new(1)),
-            idle_ttl,
-        }
-    }
+	#[must_use]
+	pub fn with_idle_ttl(idle_ttl: Duration) -> Self {
+		Self {
+			sessions: Arc::new(RwLock::new(HashMap::new())),
+			leases: Arc::new(RwLock::new(HashMap::new())),
+			spawn_gates: Arc::new(Mutex::new(HashMap::new())),
+			counters: Arc::new(RwLock::new(RegistryCounters::default())),
+			lease_seq: Arc::new(AtomicU64::new(1)),
+			idle_ttl,
+		}
+	}
 
-    /// Returns the configured idle TTL for sessions.
-    #[must_use]
-    pub fn idle_ttl(&self) -> Duration {
-        self.idle_ttl
-    }
+	/// Returns the configured idle TTL for sessions.
+	#[must_use]
+	pub fn idle_ttl(&self) -> Duration {
+		self.idle_ttl
+	}
 
-    fn next_lease_id(&self) -> String {
-        let id = self.lease_seq.fetch_add(1, Ordering::Relaxed);
-        format!("lease_{id}")
-    }
+	fn next_lease_id(&self) -> String {
+		let id = self.lease_seq.fetch_add(1, Ordering::Relaxed);
+		format!("lease_{id}")
+	}
 
-    #[instrument(skip(self, spawn), fields(lsp_id = %key.lsp_id))]
-    pub async fn acquire_or_spawn<F, Fut>(
-        &self,
-        key: SessionKey,
-        client_kind: Option<ClientKind>,
-        spawn: F,
-    ) -> Result<Lease>
-    where
-        F: FnOnce(SessionKey) -> Fut,
-        Fut: std::future::Future<Output = Result<SessionHandle>>,
-    {
-        {
-            let mut counters = self.counters.write().await;
-            counters.attach_requests_total += 1;
-        }
+	#[instrument(skip(self, spawn), fields(lsp_id = %key.lsp_id))]
+	pub async fn acquire_or_spawn<F, Fut>(
+		&self,
+		key: SessionKey,
+		client_kind: Option<ClientKind>,
+		spawn: F,
+	) -> Result<Lease>
+	where
+		F: FnOnce(SessionKey) -> Fut,
+		Fut: Future<Output = Result<SessionHandle>>,
+	{
+		{
+			let mut counters = self.counters.write().await;
+			counters.attach_requests_total += 1;
+		}
 
-        let gate = {
-            let mut gates = self.spawn_gates.lock().await;
-            gates
-                .entry(key.clone())
-                .or_insert_with(|| Arc::new(Mutex::new(SpawnGate::new())))
-                .clone()
-        };
+		let gate = {
+			let mut gates = self.spawn_gates.lock().await;
+			gates
+				.entry(key.clone())
+				.or_insert_with(|| Arc::new(Mutex::new(SpawnGate::new())))
+				.clone()
+		};
 
-        loop {
-            {
-                let mut sessions = self.sessions.write().await;
-                if let Some(record) = sessions.get_mut(&key) {
-                    record.ref_count += 1;
-                    record.terminating = false;
-                    record.termination_notice = None;
-                    record.touch();
-                    {
-                        let mut counters = self.counters.write().await;
-                        counters.sessions_reused_total += 1;
-                    }
-                    let lease_id = self.next_lease_id();
-                    self.leases.write().await.insert(
-                        lease_id.clone(),
-                        LeaseRecord {
-                            key: key.clone(),
-                            client_kind: client_kind.clone(),
-                        },
-                    );
-                    return Ok(Lease {
-                        lease_id,
-                        key,
-                        registry: self.clone(),
-                    });
-                }
-            }
+		loop {
+			{
+				let mut sessions = self.sessions.write().await;
+				if let Some(record) = sessions.get_mut(&key) {
+					record.ref_count += 1;
+					record.terminating = false;
+					record.termination_notice = None;
+					record.touch();
+					{
+						let mut counters = self.counters.write().await;
+						counters.sessions_reused_total += 1;
+					}
+					let lease_id = self.next_lease_id();
+					self.leases.write().await.insert(
+						lease_id.clone(),
+						LeaseRecord {
+							key: key.clone(),
+							client_kind: client_kind.clone(),
+						},
+					);
+					return Ok(Lease {
+						lease_id,
+						key,
+						registry: self.clone(),
+					});
+				}
+			}
 
-            let wait_for_spawn;
-            let should_spawn;
-            {
-                let mut gate_guard = gate.lock().await;
-                if !gate_guard.started {
-                    gate_guard.started = true;
-                    should_spawn = true;
-                    wait_for_spawn = None;
-                } else {
-                    should_spawn = false;
-                    wait_for_spawn = Some(gate_guard.notify.clone().notified_owned());
-                }
-            }
+			let wait_for_spawn;
+			let should_spawn;
+			{
+				let mut gate_guard = gate.lock().await;
+				if gate_guard.started {
+					should_spawn = false;
+					wait_for_spawn = Some(gate_guard.notify.clone().notified_owned());
+				} else {
+					gate_guard.started = true;
+					should_spawn = true;
+					wait_for_spawn = None;
+				}
+			}
 
-            if should_spawn {
-                let spawn_result = spawn(key.clone()).await;
-                {
-                    let mut gate_guard = gate.lock().await;
-                    gate_guard.started = false;
-                    gate_guard.notify.notify_waiters();
-                }
+			if should_spawn {
+				let spawn_result = spawn(key.clone()).await;
+				{
+					let mut gate_guard = gate.lock().await;
+					gate_guard.started = false;
+					gate_guard.notify.notify_waiters();
+				}
 
-                if let Ok(handle) = spawn_result {
-                    let mut sessions = self.sessions.write().await;
-                    let record = sessions
-                        .entry(key.clone())
-                        .or_insert_with(|| SessionRecord::new(handle));
-                    record.ref_count += 1;
-                    record.terminating = false;
-                    record.termination_notice = None;
-                    record.touch();
-                    {
-                        let mut counters = self.counters.write().await;
-                        counters.sessions_spawned_total += 1;
-                    }
-                    let lease_id = self.next_lease_id();
-                    self.leases.write().await.insert(
-                        lease_id.clone(),
-                        LeaseRecord {
-                            key: key.clone(),
-                            client_kind: client_kind.clone(),
-                        },
-                    );
-                    return Ok(Lease {
-                        lease_id,
-                        key,
-                        registry: self.clone(),
-                    });
-                }
+				if let Ok(handle) = spawn_result {
+					let mut sessions = self.sessions.write().await;
+					let record = sessions
+						.entry(key.clone())
+						.or_insert_with(|| SessionRecord::new(handle));
+					record.ref_count += 1;
+					record.terminating = false;
+					record.termination_notice = None;
+					record.touch();
+					{
+						let mut counters = self.counters.write().await;
+						counters.sessions_spawned_total += 1;
+					}
+					let lease_id = self.next_lease_id();
+					self.leases.write().await.insert(
+						lease_id.clone(),
+						LeaseRecord {
+							key: key.clone(),
+							client_kind: client_kind.clone(),
+						},
+					);
+					return Ok(Lease {
+						lease_id,
+						key,
+						registry: self.clone(),
+					});
+				}
 
-                let mut gates = self.spawn_gates.lock().await;
-                gates.remove(&key);
-                return spawn_result.map(|_| unreachable!());
-            }
+				let mut gates = self.spawn_gates.lock().await;
+				gates.remove(&key);
+				return spawn_result.map(|_| unreachable!());
+			}
 
-            if let Some(wait_for_spawn) = wait_for_spawn {
-                wait_for_spawn.await;
-            }
-        }
-    }
+			if let Some(wait_for_spawn) = wait_for_spawn {
+				wait_for_spawn.await;
+			}
+		}
+	}
 
-    pub async fn session_handle(&self, key: &SessionKey) -> Option<SessionHandle> {
-        self.sessions
-            .read()
-            .await
-            .get(key)
-            .map(|record| record.handle.clone())
-    }
+	pub async fn session_handle(&self, key: &SessionKey) -> Option<SessionHandle> {
+		self.sessions
+			.read()
+			.await
+			.get(key)
+			.map(|record| record.handle.clone())
+	}
 
-    pub async fn handle_for_lease_id(&self, lease_id: &str) -> Option<SessionHandle> {
-        let key = {
-            let leases = self.leases.read().await;
-            leases.get(lease_id).map(|record| record.key.clone())?
-        };
-        self.session_handle(&key).await
-    }
+	pub async fn handle_for_lease_id(&self, lease_id: &str) -> Option<SessionHandle> {
+		let key = {
+			let leases = self.leases.read().await;
+			leases.get(lease_id).map(|record| record.key.clone())?
+		};
+		self.session_handle(&key).await
+	}
 
-    #[instrument(skip(self))]
-    pub async fn release_by_lease_id(&self, lease_id: &str) -> Option<usize> {
-        let key = self.leases.write().await.remove(lease_id)?.key;
-        let mut sessions = self.sessions.write().await;
-        if let Some(record) = sessions.get_mut(&key) {
-            if record.ref_count > 0 {
-                record.ref_count -= 1;
-            }
-            record.touch();
-            return Some(record.ref_count);
-        }
-        Some(0)
-    }
+	#[instrument(skip(self))]
+	pub async fn release_by_lease_id(&self, lease_id: &str) -> Option<usize> {
+		let key = self.leases.write().await.remove(lease_id)?.key;
+		let mut sessions = self.sessions.write().await;
+		if let Some(record) = sessions.get_mut(&key) {
+			if record.ref_count > 0 {
+				record.ref_count -= 1;
+			}
+			record.touch();
+			return Some(record.ref_count);
+		}
+		Some(0)
+	}
 
-    pub async fn release_many(&self, lease_ids: impl IntoIterator<Item = String>) {
-        for lease_id in lease_ids {
-            let _ = self.release_by_lease_id(&lease_id).await;
-        }
-    }
+	pub async fn release_many(&self, lease_ids: impl IntoIterator<Item = String>) {
+		for lease_id in lease_ids {
+			let _ = self.release_by_lease_id(&lease_id).await;
+		}
+	}
 
-    #[instrument(skip(self, request))]
-    pub async fn call_by_lease_id(&self, lease_id: &str, request: Value) -> Result<Option<Value>> {
-        let key = {
-            let leases = self.leases.read().await;
-            match leases.get(lease_id) {
-                Some(lease) => lease.key.clone(),
-                None => return Ok(None),
-            }
-        };
+	#[instrument(skip(self, request))]
+	pub async fn call_by_lease_id(&self, lease_id: &str, request: Value) -> Result<Option<Value>> {
+		let key = {
+			let leases = self.leases.read().await;
+			match leases.get(lease_id) {
+				Some(lease) => lease.key.clone(),
+				None => return Ok(None),
+			}
+		};
 
-        let runtime = {
-            let mut sessions = self.sessions.write().await;
-            let record = match sessions.get_mut(&key) {
-                Some(record) => record,
-                None => return Ok(None),
-            };
+		let runtime = {
+			let mut sessions = self.sessions.write().await;
+			let Some(record) = sessions.get_mut(&key) else {
+				return Ok(None);
+			};
 
-            if record.terminating {
-                if let Some(notice) = &record.termination_notice {
-                    return Err(anyhow!("{}: {}", notice.code, notice.message));
-                }
-                return Err(anyhow!("session is terminating"));
-            }
+			if record.terminating {
+				if let Some(notice) = &record.termination_notice {
+					return Err(anyhow!("{}: {}", notice.code, notice.message));
+				}
+				return Err(anyhow!("session is terminating"));
+			}
 
-            record.touch();
-            record.handle.runtime.clone()
-        };
+			record.touch();
+			record.handle.runtime.clone()
+		};
 
-        let response = runtime.call(request).await?;
-        self.touch(&key).await;
-        Ok(Some(response))
-    }
+		let response = runtime.call(request).await?;
+		self.touch(&key).await;
+		Ok(Some(response))
+	}
 
-    pub async fn touch(&self, key: &SessionKey) {
-        let mut sessions = self.sessions.write().await;
-        if let Some(record) = sessions.get_mut(key) {
-            record.touch();
-        }
-    }
+	pub async fn touch(&self, key: &SessionKey) {
+		let mut sessions = self.sessions.write().await;
+		if let Some(record) = sessions.get_mut(key) {
+			record.touch();
+		}
+	}
 
-    pub async fn mark_terminating_with_notice(
-        &self,
-        key: &SessionKey,
-        notice: Option<StreamErrorPayload>,
-    ) {
-        let mut sessions = self.sessions.write().await;
-        if let Some(record) = sessions.get_mut(key) {
-            record.terminating = true;
-            record.termination_notice = notice;
-        }
-    }
+	pub async fn mark_terminating_with_notice(
+		&self,
+		key: &SessionKey,
+		notice: Option<StreamErrorPayload>,
+	) {
+		let mut sessions = self.sessions.write().await;
+		if let Some(record) = sessions.get_mut(key) {
+			record.terminating = true;
+			record.termination_notice = notice;
+		}
+	}
 
-    pub async fn remove(&self, key: &SessionKey) {
-        {
-            let mut sessions = self.sessions.write().await;
-            sessions.remove(key);
-        }
-        let mut leases = self.leases.write().await;
-        leases.retain(|_, lease_record| &lease_record.key != key);
-        let mut gates = self.spawn_gates.lock().await;
-        gates.remove(key);
-    }
+	pub async fn remove(&self, key: &SessionKey) {
+		{
+			let mut sessions = self.sessions.write().await;
+			sessions.remove(key);
+		}
+		let mut leases = self.leases.write().await;
+		leases.retain(|_, lease_record| &lease_record.key != key);
+		let mut gates = self.spawn_gates.lock().await;
+		gates.remove(key);
+	}
 
-    pub async fn idle_candidates(&self) -> Vec<SessionHandle> {
-        let now = Instant::now();
-        let idle_ttl = self.idle_ttl;
-        let mut sessions = self.sessions.write().await;
+	pub async fn idle_candidates(&self) -> Vec<SessionHandle> {
+		let now = Instant::now();
+		let idle_ttl = self.idle_ttl;
+		let mut sessions = self.sessions.write().await;
 
-        sessions
-            .values_mut()
-            .filter(|record| !record.terminating && record.ref_count == 0)
-            .filter(|record| now.duration_since(record.last_used) >= idle_ttl)
-            .map(|record| {
-                record.terminating = true;
-                record.handle.clone()
-            })
-            .collect()
-    }
+		sessions
+			.values_mut()
+			.filter(|record| !record.terminating && record.ref_count == 0)
+			.filter(|record| now.duration_since(record.last_used) >= idle_ttl)
+			.map(|record| {
+				record.terminating = true;
+				record.handle.clone()
+			})
+			.collect()
+	}
 
-    pub async fn all_handles(&self) -> Vec<SessionHandle> {
-        self.sessions
-            .read()
-            .await
-            .values()
-            .map(|record| record.handle.clone())
-            .collect()
-    }
+	pub async fn all_handles(&self) -> Vec<SessionHandle> {
+		self.sessions
+			.read()
+			.await
+			.values()
+			.map(|record| record.handle.clone())
+			.collect()
+	}
 
-    pub async fn memory_snapshots(&self) -> Vec<MemorySessionSnapshot> {
-        let now = Instant::now();
-        let sessions = self.sessions.read().await;
-        let leases = self.leases.read().await;
+	pub async fn memory_snapshots(&self) -> Vec<MemorySessionSnapshot> {
+		let now = Instant::now();
+		let sessions = self.sessions.read().await;
+		let leases = self.leases.read().await;
 
-        sessions
-            .values()
-            .map(|record| {
-                let client_kinds = lease_client_kinds(&record.handle.key, &leases);
-                MemorySessionSnapshot {
-                    handle: record.handle.clone(),
-                    ref_count: record.ref_count,
-                    idle_for: now.saturating_duration_since(record.last_used),
-                    client_kinds,
-                }
-            })
-            .collect()
-    }
+		sessions
+			.values()
+			.map(|record| {
+				let client_kinds = lease_client_kinds(&record.handle.key, &leases);
+				MemorySessionSnapshot {
+					handle: record.handle.clone(),
+					ref_count: record.ref_count,
+					idle_for: now.saturating_duration_since(record.last_used),
+					client_kinds,
+				}
+			})
+			.collect()
+	}
 
-    pub async fn increment_idle_gc(&self) {
-        let mut counters = self.counters.write().await;
-        counters.sessions_gc_idle_total += 1;
-    }
+	pub async fn increment_idle_gc(&self) {
+		let mut counters = self.counters.write().await;
+		counters.sessions_gc_idle_total += 1;
+	}
 
-    pub async fn increment_memory_eviction(&self) {
-        let mut counters = self.counters.write().await;
-        counters.sessions_evicted_memory_total += 1;
-    }
+	pub async fn increment_memory_eviction(&self) {
+		let mut counters = self.counters.write().await;
+		counters.sessions_evicted_memory_total += 1;
+	}
 
-    pub async fn increment_session_crash(&self) {
-        let mut counters = self.counters.write().await;
-        counters.session_crashes_total += 1;
-    }
+	pub async fn increment_session_crash(&self) {
+		let mut counters = self.counters.write().await;
+		counters.session_crashes_total += 1;
+	}
 
-    pub async fn snapshot(&self) -> RegistrySnapshot {
-        let now = Instant::now();
-        let idle_ttl = self.idle_ttl;
-        let sessions = self.sessions.read().await;
-        let leases = self.leases.read().await;
-        let counters = *self.counters.read().await;
+	pub async fn snapshot(&self) -> RegistrySnapshot {
+		let now = Instant::now();
+		let idle_ttl = self.idle_ttl;
+		let sessions = self.sessions.read().await;
+		let leases = self.leases.read().await;
+		let counters = *self.counters.read().await;
 
-        let session_snapshots = sessions
-            .values()
-            .map(|record| SessionSnapshot {
-                key: record.handle.key.clone(),
-                ref_count: record.ref_count,
-                terminating: record.terminating,
-                idle_for: now.saturating_duration_since(record.last_used),
-                idle_ttl,
-                client_kinds: lease_client_kinds(&record.handle.key, &leases),
-            })
-            .collect();
+		let session_snapshots = sessions
+			.values()
+			.map(|record| {
+				SessionSnapshot {
+					key: record.handle.key.clone(),
+					ref_count: record.ref_count,
+					terminating: record.terminating,
+					idle_for: now.saturating_duration_since(record.last_used),
+					idle_ttl,
+					client_kinds: lease_client_kinds(&record.handle.key, &leases),
+				}
+			})
+			.collect();
 
-        RegistrySnapshot {
-            sessions: session_snapshots,
-            lease_count: leases.len(),
-            counters,
-        }
-    }
+		RegistrySnapshot {
+			sessions: session_snapshots,
+			lease_count: leases.len(),
+			counters,
+		}
+	}
 
-    pub async fn session_count(&self) -> usize {
-        self.sessions.read().await.len()
-    }
+	pub async fn session_count(&self) -> usize {
+		self.sessions.read().await.len()
+	}
 
-    pub async fn lease_count(&self) -> usize {
-        self.leases.read().await.len()
-    }
+	pub async fn lease_count(&self) -> usize {
+		self.leases.read().await.len()
+	}
 
-    pub async fn counters(&self) -> RegistryCounters {
-        *self.counters.read().await
-    }
+	pub async fn counters(&self) -> RegistryCounters {
+		*self.counters.read().await
+	}
 }
 
 fn lease_client_kinds(key: &SessionKey, leases: &HashMap<String, LeaseRecord>) -> Vec<ClientKind> {
-    let mut kinds = HashSet::new();
-    for lease in leases.values() {
-        if &lease.key == key {
-            if let Some(kind) = &lease.client_kind {
-                kinds.insert(kind.clone());
-            }
-        }
-    }
+	let mut kinds = HashSet::new();
+	for lease in leases.values() {
+		if &lease.key == key {
+			if let Some(kind) = &lease.client_kind {
+				kinds.insert(kind.clone());
+			}
+		}
+	}
 
-    kinds.into_iter().collect()
+	kinds.into_iter().collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::{collections::BTreeMap, fs, path::PathBuf};
+	use std::collections::BTreeMap;
+	use std::fs;
+	use std::path::PathBuf;
 
-    fn test_key(id: &str) -> SessionKey {
-        SessionKey::new(
-            PathBuf::from(format!("/tmp/lspee-reg-test-{id}")),
-            id,
-            "hash",
-        )
-    }
+	use super::*;
 
-    async fn test_handle(key: SessionKey) -> SessionHandle {
-        fs::create_dir_all(&key.root).expect("root dir");
-        let transport = std::sync::Arc::new(lspee_lsp::LspTransport::new(key.root.clone()));
-        let lsp = lspee_config::LspConfig {
-            id: key.lsp_id.clone(),
-            command: "cat".to_string(),
-            args: Vec::new(),
-            env: BTreeMap::new(),
-            initialization_options: BTreeMap::new(),
-        };
-        let runtime = std::sync::Arc::new(transport.spawn(&lsp).await.expect("spawn cat"));
-        let (events, _) = broadcast::channel(4);
-        SessionHandle {
-            key,
-            transport,
-            runtime,
-            initialize_result: serde_json::Value::Null,
-            events,
-        }
-    }
+	fn test_key(id: &str) -> SessionKey {
+		SessionKey::new(
+			PathBuf::from(format!("/tmp/lspee-reg-test-{id}")),
+			id,
+			"hash",
+		)
+	}
 
-    #[tokio::test]
-    async fn registry_new_is_empty() {
-        let reg = SessionRegistry::new();
-        assert_eq!(reg.session_count().await, 0);
-        assert_eq!(reg.lease_count().await, 0);
-        assert_eq!(reg.idle_ttl(), DEFAULT_IDLE_TTL);
-    }
+	async fn test_handle(key: SessionKey) -> SessionHandle {
+		fs::create_dir_all(&key.root).expect("root dir");
+		let transport = Arc::new(lspee_lsp::LspTransport::new(key.root.clone()));
+		let lsp = lspee_config::LspConfig {
+			id: key.lsp_id.clone(),
+			command: "cat".to_string(),
+			args: Vec::new(),
+			env: BTreeMap::new(),
+			initialization_options: BTreeMap::new(),
+		};
+		let runtime = Arc::new(transport.spawn(&lsp).await.expect("spawn cat"));
+		let (events, _) = broadcast::channel(4);
+		SessionHandle {
+			key,
+			transport,
+			runtime,
+			initialize_result: Value::Null,
+			events,
+		}
+	}
 
-    #[tokio::test]
-    async fn registry_with_custom_idle_ttl() {
-        let reg = SessionRegistry::with_idle_ttl(Duration::from_secs(60));
-        assert_eq!(reg.idle_ttl(), Duration::from_secs(60));
-    }
+	#[tokio::test]
+	async fn registry_new_is_empty() {
+		let reg = SessionRegistry::new();
+		assert_eq!(reg.session_count().await, 0);
+		assert_eq!(reg.lease_count().await, 0);
+		assert_eq!(reg.idle_ttl(), DEFAULT_IDLE_TTL);
+	}
 
-    #[tokio::test]
-    async fn acquire_spawn_and_release() {
-        let reg = SessionRegistry::new();
-        let key = test_key("acq");
+	#[tokio::test]
+	async fn registry_with_custom_idle_ttl() {
+		let reg = SessionRegistry::with_idle_ttl(Duration::from_secs(60));
+		assert_eq!(reg.idle_ttl(), Duration::from_secs(60));
+	}
 
-        let lease = reg
-            .acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| async move {
-                Ok(test_handle(k).await)
-            })
-            .await
-            .expect("should spawn");
+	#[tokio::test]
+	async fn acquire_spawn_and_release() {
+		let reg = SessionRegistry::new();
+		let key = test_key("acq");
 
-        assert_eq!(reg.session_count().await, 1);
-        assert_eq!(reg.lease_count().await, 1);
-        assert_eq!(lease.key(), &key);
+		let lease = reg
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| {
+				async move { Ok(test_handle(k).await) }
+			})
+			.await
+			.expect("should spawn");
 
-        let remaining = reg.release_by_lease_id(lease.lease_id()).await;
-        assert_eq!(remaining, Some(0));
-        assert_eq!(reg.lease_count().await, 0);
-        assert_eq!(reg.session_count().await, 1); // session still alive
+		assert_eq!(reg.session_count().await, 1);
+		assert_eq!(reg.lease_count().await, 1);
+		assert_eq!(lease.key(), &key);
 
-        // Cleanup
-        let handles = reg.all_handles().await;
-        for h in &handles {
-            let _ = h.runtime.force_stop().await;
-        }
-        reg.remove(&key).await;
-        let _ = fs::remove_dir_all(&key.root);
-    }
+		let remaining = reg.release_by_lease_id(lease.lease_id()).await;
+		assert_eq!(remaining, Some(0));
+		assert_eq!(reg.lease_count().await, 0);
+		assert_eq!(reg.session_count().await, 1); // session still alive
 
-    #[tokio::test]
-    async fn acquire_reuses_existing_session() {
-        let reg = SessionRegistry::new();
-        let key = test_key("reuse");
+		// Cleanup
+		let handles = reg.all_handles().await;
+		for h in &handles {
+			let _ = h.runtime.force_stop().await;
+		}
+		reg.remove(&key).await;
+		let _ = fs::remove_dir_all(&key.root);
+	}
 
-        let lease1 = reg
-            .acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| async move {
-                Ok(test_handle(k).await)
-            })
-            .await
-            .unwrap();
-        let lease2 = reg
-            .acquire_or_spawn(key.clone(), Some(ClientKind::Human), |_| async {
-                panic!("should not spawn again")
-            })
-            .await
-            .unwrap();
+	#[tokio::test]
+	async fn acquire_reuses_existing_session() {
+		let reg = SessionRegistry::new();
+		let key = test_key("reuse");
 
-        assert_eq!(reg.session_count().await, 1);
-        assert_eq!(reg.lease_count().await, 2);
-        assert_ne!(lease1.lease_id(), lease2.lease_id());
+		let lease1 = reg
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Agent), |k| {
+				async move { Ok(test_handle(k).await) }
+			})
+			.await
+			.unwrap();
+		let lease2 = reg
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Human), |_| {
+				async { panic!("should not spawn again") }
+			})
+			.await
+			.unwrap();
 
-        let counters = reg.counters().await;
-        assert_eq!(counters.sessions_spawned_total, 1);
-        assert!(counters.sessions_reused_total >= 1);
+		assert_eq!(reg.session_count().await, 1);
+		assert_eq!(reg.lease_count().await, 2);
+		assert_ne!(lease1.lease_id(), lease2.lease_id());
 
-        reg.release_by_lease_id(lease1.lease_id()).await;
-        reg.release_by_lease_id(lease2.lease_id()).await;
-        let handles = reg.all_handles().await;
-        for h in &handles {
-            let _ = h.runtime.force_stop().await;
-        }
-        reg.remove(&key).await;
-        let _ = fs::remove_dir_all(&key.root);
-    }
+		let counters = reg.counters().await;
+		assert_eq!(counters.sessions_spawned_total, 1);
+		assert!(counters.sessions_reused_total >= 1);
 
-    #[tokio::test]
-    async fn session_handle_lookup() {
-        let reg = SessionRegistry::new();
-        let key = test_key("lookup");
+		reg.release_by_lease_id(lease1.lease_id()).await;
+		reg.release_by_lease_id(lease2.lease_id()).await;
+		let handles = reg.all_handles().await;
+		for h in &handles {
+			let _ = h.runtime.force_stop().await;
+		}
+		reg.remove(&key).await;
+		let _ = fs::remove_dir_all(&key.root);
+	}
 
-        assert!(reg.session_handle(&key).await.is_none());
+	#[tokio::test]
+	async fn session_handle_lookup() {
+		let reg = SessionRegistry::new();
+		let key = test_key("lookup");
 
-        let lease = reg
-            .acquire_or_spawn(
-                key.clone(),
-                None,
-                |k| async move { Ok(test_handle(k).await) },
-            )
-            .await
-            .unwrap();
+		assert!(reg.session_handle(&key).await.is_none());
 
-        assert!(reg.session_handle(&key).await.is_some());
-        assert!(reg.handle_for_lease_id(lease.lease_id()).await.is_some());
-        assert!(reg.handle_for_lease_id("nonexistent").await.is_none());
+		let lease = reg
+			.acquire_or_spawn(
+				key.clone(),
+				None,
+				|k| async move { Ok(test_handle(k).await) },
+			)
+			.await
+			.unwrap();
 
-        reg.release_by_lease_id(lease.lease_id()).await;
-        let handles = reg.all_handles().await;
-        for h in &handles {
-            let _ = h.runtime.force_stop().await;
-        }
-        reg.remove(&key).await;
-        let _ = fs::remove_dir_all(&key.root);
-    }
+		assert!(reg.session_handle(&key).await.is_some());
+		assert!(reg.handle_for_lease_id(lease.lease_id()).await.is_some());
+		assert!(reg.handle_for_lease_id("nonexistent").await.is_none());
 
-    #[tokio::test]
-    async fn call_by_lease_id_roundtrips() {
-        let reg = SessionRegistry::new();
-        let key = test_key("call-rt");
+		reg.release_by_lease_id(lease.lease_id()).await;
+		let handles = reg.all_handles().await;
+		for h in &handles {
+			let _ = h.runtime.force_stop().await;
+		}
+		reg.remove(&key).await;
+		let _ = fs::remove_dir_all(&key.root);
+	}
 
-        let lease = reg
-            .acquire_or_spawn(
-                key.clone(),
-                None,
-                |k| async move { Ok(test_handle(k).await) },
-            )
-            .await
-            .unwrap();
+	#[tokio::test]
+	async fn call_by_lease_id_roundtrips() {
+		let reg = SessionRegistry::new();
+		let key = test_key("call-rt");
 
-        let response = reg
-            .call_by_lease_id(
-                lease.lease_id(),
-                serde_json::json!({"jsonrpc":"2.0","id":99,"method":"test","params":{}}),
-            )
-            .await
-            .unwrap();
+		let lease = reg
+			.acquire_or_spawn(
+				key.clone(),
+				None,
+				|k| async move { Ok(test_handle(k).await) },
+			)
+			.await
+			.unwrap();
 
-        assert!(response.is_some());
-        assert_eq!(response.unwrap()["id"], 99);
+		let response = reg
+			.call_by_lease_id(
+				lease.lease_id(),
+				serde_json::json!({"jsonrpc":"2.0","id":99,"method":"test","params":{}}),
+			)
+			.await
+			.unwrap();
 
-        // Nonexistent lease
-        let none = reg
-            .call_by_lease_id("nope", serde_json::json!({}))
-            .await
-            .unwrap();
-        assert!(none.is_none());
+		assert!(response.is_some());
+		assert_eq!(response.unwrap()["id"], 99);
 
-        reg.release_by_lease_id(lease.lease_id()).await;
-        let handles = reg.all_handles().await;
-        for h in &handles {
-            let _ = h.runtime.force_stop().await;
-        }
-        reg.remove(&key).await;
-        let _ = fs::remove_dir_all(&key.root);
-    }
+		// Nonexistent lease
+		let none = reg
+			.call_by_lease_id("nope", serde_json::json!({}))
+			.await
+			.unwrap();
+		assert!(none.is_none());
 
-    #[tokio::test]
-    async fn mark_terminating_prevents_calls() {
-        let reg = SessionRegistry::new();
-        let key = test_key("term");
+		reg.release_by_lease_id(lease.lease_id()).await;
+		let handles = reg.all_handles().await;
+		for h in &handles {
+			let _ = h.runtime.force_stop().await;
+		}
+		reg.remove(&key).await;
+		let _ = fs::remove_dir_all(&key.root);
+	}
 
-        let lease = reg
-            .acquire_or_spawn(
-                key.clone(),
-                None,
-                |k| async move { Ok(test_handle(k).await) },
-            )
-            .await
-            .unwrap();
+	#[tokio::test]
+	async fn mark_terminating_prevents_calls() {
+		let reg = SessionRegistry::new();
+		let key = test_key("term");
 
-        reg.mark_terminating_with_notice(&key, None).await;
+		let lease = reg
+			.acquire_or_spawn(
+				key.clone(),
+				None,
+				|k| async move { Ok(test_handle(k).await) },
+			)
+			.await
+			.unwrap();
 
-        let result = reg
-            .call_by_lease_id(
-                lease.lease_id(),
-                serde_json::json!({"jsonrpc":"2.0","id":1,"method":"test","params":{}}),
-            )
-            .await;
-        assert!(result.is_err());
+		reg.mark_terminating_with_notice(&key, None).await;
 
-        reg.release_by_lease_id(lease.lease_id()).await;
-        let handles = reg.all_handles().await;
-        for h in &handles {
-            let _ = h.runtime.force_stop().await;
-        }
-        reg.remove(&key).await;
-        let _ = fs::remove_dir_all(&key.root);
-    }
+		let result = reg
+			.call_by_lease_id(
+				lease.lease_id(),
+				serde_json::json!({"jsonrpc":"2.0","id":1,"method":"test","params":{}}),
+			)
+			.await;
+		assert!(result.is_err());
 
-    #[tokio::test]
-    async fn counters_increment() {
-        let reg = SessionRegistry::new();
+		reg.release_by_lease_id(lease.lease_id()).await;
+		let handles = reg.all_handles().await;
+		for h in &handles {
+			let _ = h.runtime.force_stop().await;
+		}
+		reg.remove(&key).await;
+		let _ = fs::remove_dir_all(&key.root);
+	}
 
-        reg.increment_idle_gc().await;
-        reg.increment_memory_eviction().await;
-        reg.increment_session_crash().await;
+	#[tokio::test]
+	async fn counters_increment() {
+		let reg = SessionRegistry::new();
 
-        let counters = reg.counters().await;
-        assert_eq!(counters.sessions_gc_idle_total, 1);
-        assert_eq!(counters.sessions_evicted_memory_total, 1);
-        assert_eq!(counters.session_crashes_total, 1);
-    }
+		reg.increment_idle_gc().await;
+		reg.increment_memory_eviction().await;
+		reg.increment_session_crash().await;
 
-    #[tokio::test]
-    async fn snapshot_captures_state() {
-        let reg = SessionRegistry::new();
-        let key = test_key("snap");
+		let counters = reg.counters().await;
+		assert_eq!(counters.sessions_gc_idle_total, 1);
+		assert_eq!(counters.sessions_evicted_memory_total, 1);
+		assert_eq!(counters.session_crashes_total, 1);
+	}
 
-        let lease = reg
-            .acquire_or_spawn(key.clone(), Some(ClientKind::Ci), |k| async move {
-                Ok(test_handle(k).await)
-            })
-            .await
-            .unwrap();
+	#[tokio::test]
+	async fn snapshot_captures_state() {
+		let reg = SessionRegistry::new();
+		let key = test_key("snap");
 
-        let snap = reg.snapshot().await;
-        assert_eq!(snap.sessions.len(), 1);
-        assert_eq!(snap.lease_count, 1);
-        assert_eq!(snap.sessions[0].ref_count, 1);
-        assert!(!snap.sessions[0].terminating);
+		let lease = reg
+			.acquire_or_spawn(key.clone(), Some(ClientKind::Ci), |k| {
+				async move { Ok(test_handle(k).await) }
+			})
+			.await
+			.unwrap();
 
-        reg.release_by_lease_id(lease.lease_id()).await;
-        let handles = reg.all_handles().await;
-        for h in &handles {
-            let _ = h.runtime.force_stop().await;
-        }
-        reg.remove(&key).await;
-        let _ = fs::remove_dir_all(&key.root);
-    }
+		let snap = reg.snapshot().await;
+		assert_eq!(snap.sessions.len(), 1);
+		assert_eq!(snap.lease_count, 1);
+		assert_eq!(snap.sessions[0].ref_count, 1);
+		assert!(!snap.sessions[0].terminating);
 
-    #[tokio::test]
-    async fn release_many() {
-        let reg = SessionRegistry::new();
-        let key = test_key("rel-many");
+		reg.release_by_lease_id(lease.lease_id()).await;
+		let handles = reg.all_handles().await;
+		for h in &handles {
+			let _ = h.runtime.force_stop().await;
+		}
+		reg.remove(&key).await;
+		let _ = fs::remove_dir_all(&key.root);
+	}
 
-        let l1 = reg
-            .acquire_or_spawn(
-                key.clone(),
-                None,
-                |k| async move { Ok(test_handle(k).await) },
-            )
-            .await
-            .unwrap();
-        let l2 = reg
-            .acquire_or_spawn(key.clone(), None, |_| async { panic!("no spawn") })
-            .await
-            .unwrap();
+	#[tokio::test]
+	async fn release_many() {
+		let reg = SessionRegistry::new();
+		let key = test_key("rel-many");
 
-        assert_eq!(reg.lease_count().await, 2);
+		let l1 = reg
+			.acquire_or_spawn(
+				key.clone(),
+				None,
+				|k| async move { Ok(test_handle(k).await) },
+			)
+			.await
+			.unwrap();
+		let l2 = reg
+			.acquire_or_spawn(key.clone(), None, |_| async { panic!("no spawn") })
+			.await
+			.unwrap();
 
-        reg.release_many(vec![l1.lease_id().to_string(), l2.lease_id().to_string()])
-            .await;
+		assert_eq!(reg.lease_count().await, 2);
 
-        assert_eq!(reg.lease_count().await, 0);
+		reg.release_many(vec![l1.lease_id().to_string(), l2.lease_id().to_string()])
+			.await;
 
-        let handles = reg.all_handles().await;
-        for h in &handles {
-            let _ = h.runtime.force_stop().await;
-        }
-        reg.remove(&key).await;
-        let _ = fs::remove_dir_all(&key.root);
-    }
+		assert_eq!(reg.lease_count().await, 0);
 
-    #[tokio::test]
-    async fn lease_release_method() {
-        let reg = SessionRegistry::new();
-        let key = test_key("lease-rel");
+		let handles = reg.all_handles().await;
+		for h in &handles {
+			let _ = h.runtime.force_stop().await;
+		}
+		reg.remove(&key).await;
+		let _ = fs::remove_dir_all(&key.root);
+	}
 
-        let lease = reg
-            .acquire_or_spawn(
-                key.clone(),
-                None,
-                |k| async move { Ok(test_handle(k).await) },
-            )
-            .await
-            .unwrap();
+	#[tokio::test]
+	async fn lease_release_method() {
+		let reg = SessionRegistry::new();
+		let key = test_key("lease-rel");
 
-        assert_eq!(reg.lease_count().await, 1);
-        lease.release().await;
-        assert_eq!(reg.lease_count().await, 0);
+		let lease = reg
+			.acquire_or_spawn(
+				key.clone(),
+				None,
+				|k| async move { Ok(test_handle(k).await) },
+			)
+			.await
+			.unwrap();
 
-        let handles = reg.all_handles().await;
-        for h in &handles {
-            let _ = h.runtime.force_stop().await;
-        }
-        reg.remove(&key).await;
-        let _ = fs::remove_dir_all(&key.root);
-    }
+		assert_eq!(reg.lease_count().await, 1);
+		lease.release().await;
+		assert_eq!(reg.lease_count().await, 0);
+
+		let handles = reg.all_handles().await;
+		for h in &handles {
+			let _ = h.runtime.force_stop().await;
+		}
+		reg.remove(&key).await;
+		let _ = fs::remove_dir_all(&key.root);
+	}
 }

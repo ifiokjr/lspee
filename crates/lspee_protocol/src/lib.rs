@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use serde_json::Value;
 
 pub const PROTOCOL_VERSION: u32 = 1;
@@ -42,148 +43,148 @@ pub const ERROR_SESSION_EVICTED_MEMORY: &str = "E_SESSION_EVICTED_MEMORY";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ControlEnvelope<T> {
-    pub v: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
-    #[serde(rename = "type")]
-    pub message_type: String,
-    pub payload: T,
+	pub v: u32,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub id: Option<String>,
+	#[serde(rename = "type")]
+	pub message_type: String,
+	pub payload: T,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum ControlPayload {
-    Attach(Attach),
-    AttachOk(AttachOk),
-    Release(Release),
-    ReleaseOk(ReleaseOk),
-    Call(Call),
-    CallOk(CallOk),
-    Ping(Ping),
-    Pong(Pong),
-    Shutdown(Shutdown),
-    ShutdownOk(ShutdownOk),
-    Stats(Stats),
-    StatsOk(StatsOk),
-    Error(ErrorResponse),
+	Attach(Attach),
+	AttachOk(AttachOk),
+	Release(Release),
+	ReleaseOk(ReleaseOk),
+	Call(Call),
+	CallOk(CallOk),
+	Ping(Ping),
+	Pong(Pong),
+	Shutdown(Shutdown),
+	ShutdownOk(ShutdownOk),
+	Stats(Stats),
+	StatsOk(StatsOk),
+	Error(ErrorResponse),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Attach {
-    pub session_key: SessionKeyWire,
-    pub client_meta: ClientMeta,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub capabilities: Option<AttachCapabilities>,
+	pub session_key: SessionKeyWire,
+	pub client_meta: ClientMeta,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub capabilities: Option<AttachCapabilities>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionKeyWire {
-    pub project_root: String,
-    pub config_hash: String,
-    pub lsp_id: String,
+	pub project_root: String,
+	pub config_hash: String,
+	pub lsp_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClientMeta {
-    pub client_name: String,
-    pub client_version: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub client_kind: Option<ClientKind>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub pid: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cwd: Option<String>,
+	pub client_name: String,
+	pub client_version: String,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub client_kind: Option<ClientKind>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub pid: Option<u32>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub cwd: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum ClientKind {
-    Editor,
-    Agent,
-    Human,
-    Ci,
-    Other,
+	Editor,
+	Agent,
+	Human,
+	Ci,
+	Other,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AttachCapabilities {
-    pub stream_mode: Vec<StreamMode>,
+	pub stream_mode: Vec<StreamMode>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum StreamMode {
-    Dedicated,
-    MuxControl,
+	Dedicated,
+	MuxControl,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AttachOk {
-    pub lease_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_id: Option<String>,
-    pub stream: StreamInfo,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub server: Option<ServerInfo>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub initialize_result: Option<Value>,
+	pub lease_id: String,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub session_id: Option<String>,
+	pub stream: StreamInfo,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub server: Option<ServerInfo>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub initialize_result: Option<Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StreamInfo {
-    pub mode: StreamMode,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub endpoint: Option<String>,
+	pub mode: StreamMode,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub endpoint: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerInfo {
-    pub state: String,
-    pub reused: bool,
+	pub state: String,
+	pub reused: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Release {
-    pub lease_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reason: Option<ReleaseReason>,
+	pub lease_id: String,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub reason: Option<ReleaseReason>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ReleaseReason {
-    ClientExit,
-    ClientDisconnect,
-    Shutdown,
-    Error,
+	ClientExit,
+	ClientDisconnect,
+	Shutdown,
+	Error,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReleaseOk {
-    pub lease_id: String,
-    pub ref_count: u64,
+	pub lease_id: String,
+	pub ref_count: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Call {
-    pub lease_id: String,
-    pub request: Value,
+	pub lease_id: String,
+	pub request: Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CallOk {
-    pub lease_id: String,
-    pub response: Value,
+	pub lease_id: String,
+	pub response: Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ping {
-    pub ts_ms: u64,
+	pub ts_ms: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pong {
-    pub ts_ms: u64,
+	pub ts_ms: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -191,7 +192,7 @@ pub struct Shutdown {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShutdownOk {
-    pub accepted: bool,
+	pub accepted: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -199,121 +200,122 @@ pub struct Stats {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StatsOk {
-    pub sessions: u64,
-    pub leases: u64,
-    pub uptime_ms: u64,
-    pub counters: StatsCounters,
-    pub memory: MemoryStats,
+	pub sessions: u64,
+	pub leases: u64,
+	pub uptime_ms: u64,
+	pub counters: StatsCounters,
+	pub memory: MemoryStats,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryStats {
-    pub total_bytes: u64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_total_bytes: Option<u64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_session_bytes: Option<u64>,
+	pub total_bytes: u64,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub max_total_bytes: Option<u64>,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub max_session_bytes: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StatsCounters {
-    pub sessions_spawned_total: u64,
-    pub sessions_reused_total: u64,
-    pub sessions_gc_idle_total: u64,
-    pub sessions_evicted_memory_total: u64,
-    pub session_crashes_total: u64,
-    pub attach_requests_total: u64,
+	pub sessions_spawned_total: u64,
+	pub sessions_reused_total: u64,
+	pub sessions_gc_idle_total: u64,
+	pub sessions_evicted_memory_total: u64,
+	pub session_crashes_total: u64,
+	pub attach_requests_total: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ErrorResponse {
-    pub code: String,
-    pub message: String,
-    pub retryable: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub details: Option<Value>,
+	pub code: String,
+	pub message: String,
+	pub retryable: bool,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub details: Option<Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StreamFrame<T = Value> {
-    pub v: u32,
-    #[serde(rename = "type")]
-    pub frame_type: StreamFrameType,
-    pub lease_id: String,
-    pub seq: u64,
-    pub payload: T,
+	pub v: u32,
+	#[serde(rename = "type")]
+	pub frame_type: StreamFrameType,
+	pub lease_id: String,
+	pub seq: u64,
+	pub payload: T,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum StreamFrameType {
-    LspIn,
-    LspOut,
-    StreamError,
+	LspIn,
+	LspOut,
+	StreamError,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StreamErrorPayload {
-    pub code: String,
-    pub message: String,
-    pub retryable: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub details: Option<Value>,
+	pub code: String,
+	pub message: String,
+	pub retryable: bool,
+	#[serde(skip_serializing_if = "Option::is_none")]
+	pub details: Option<Value>,
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use serde_json::json;
+	use serde_json::json;
 
-    #[test]
-    fn control_envelope_roundtrips_for_call_payload() {
-        let envelope = ControlEnvelope {
-            v: PROTOCOL_VERSION,
-            id: Some("req-1".to_string()),
-            message_type: TYPE_CALL.to_string(),
-            payload: serde_json::to_value(Call {
-                lease_id: "lease_42".to_string(),
-                request: json!({
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                    "method": "initialize",
-                    "params": {}
-                }),
-            })
-            .expect("call payload should serialize"),
-        };
+	use super::*;
 
-        let encoded = serde_json::to_string(&envelope).expect("envelope should encode");
-        let decoded: ControlEnvelope<Value> =
-            serde_json::from_str(&encoded).expect("envelope should decode");
+	#[test]
+	fn control_envelope_roundtrips_for_call_payload() {
+		let envelope = ControlEnvelope {
+			v: PROTOCOL_VERSION,
+			id: Some("req-1".to_string()),
+			message_type: TYPE_CALL.to_string(),
+			payload: serde_json::to_value(Call {
+				lease_id: "lease_42".to_string(),
+				request: json!({
+					"jsonrpc": "2.0",
+					"id": 1,
+					"method": "initialize",
+					"params": {}
+				}),
+			})
+			.expect("call payload should serialize"),
+		};
 
-        assert_eq!(decoded.v, PROTOCOL_VERSION);
-        assert_eq!(decoded.id.as_deref(), Some("req-1"));
-        assert_eq!(decoded.message_type, TYPE_CALL);
-        assert_eq!(decoded.payload["lease_id"], "lease_42");
-    }
+		let encoded = serde_json::to_string(&envelope).expect("envelope should encode");
+		let decoded: ControlEnvelope<Value> =
+			serde_json::from_str(&encoded).expect("envelope should decode");
 
-    #[test]
-    fn stream_frame_roundtrips_with_lsp_out_payload() {
-        let frame = StreamFrame {
-            v: PROTOCOL_VERSION,
-            frame_type: StreamFrameType::LspOut,
-            lease_id: "lease_7".to_string(),
-            seq: 9,
-            payload: json!({
-                "jsonrpc": "2.0",
-                "id": 99,
-                "result": {"ok": true}
-            }),
-        };
+		assert_eq!(decoded.v, PROTOCOL_VERSION);
+		assert_eq!(decoded.id.as_deref(), Some("req-1"));
+		assert_eq!(decoded.message_type, TYPE_CALL);
+		assert_eq!(decoded.payload["lease_id"], "lease_42");
+	}
 
-        let encoded = serde_json::to_string(&frame).expect("stream frame should encode");
-        let decoded: StreamFrame<Value> =
-            serde_json::from_str(&encoded).expect("stream frame should decode");
+	#[test]
+	fn stream_frame_roundtrips_with_lsp_out_payload() {
+		let frame = StreamFrame {
+			v: PROTOCOL_VERSION,
+			frame_type: StreamFrameType::LspOut,
+			lease_id: "lease_7".to_string(),
+			seq: 9,
+			payload: json!({
+				"jsonrpc": "2.0",
+				"id": 99,
+				"result": {"ok": true}
+			}),
+		};
 
-        assert_eq!(decoded.v, PROTOCOL_VERSION);
-        assert_eq!(decoded.lease_id, "lease_7");
-        assert_eq!(decoded.seq, 9);
-        assert_eq!(decoded.payload["id"], 99);
-    }
+		let encoded = serde_json::to_string(&frame).expect("stream frame should encode");
+		let decoded: StreamFrame<Value> =
+			serde_json::from_str(&encoded).expect("stream frame should decode");
+
+		assert_eq!(decoded.v, PROTOCOL_VERSION);
+		assert_eq!(decoded.lease_id, "lease_7");
+		assert_eq!(decoded.seq, 9);
+		assert_eq!(decoded.payload["id"], 99);
+	}
 }

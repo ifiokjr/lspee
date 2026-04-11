@@ -12,4 +12,7 @@ description = "Reserved crate name for the lspee project; implementation crates 
 [lib]
 path = "src/lib.rs"
 
+[lints]
+workspace = true
+
 [dependencies]

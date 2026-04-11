@@ -14,14 +14,14 @@ use lspee_test_helpers::snapshots::snapshot_settings;
 // ---------------------------------------------------------------------------
 
 fn run_lsp_json(root: &Path) -> anyhow::Result<()> {
-    lspee_cli::commands::lsp::run(lspee_cli::commands::lsp::LspCommand {
+    lspee_cli::commands::lsp::run(&lspee_cli::commands::lsp::LspCommand {
         project_root: Some(root.to_path_buf()),
         output: lspee_cli::commands::lsp::LspOutput::Json,
     })
 }
 
 fn run_config_show_json(root: &Path) -> anyhow::Result<()> {
-    lspee_cli::commands::config::run(lspee_cli::commands::config::ConfigCommand {
+    lspee_cli::commands::config::run(&lspee_cli::commands::config::ConfigCommand {
         action: lspee_cli::commands::config::ConfigAction::Show(
             lspee_cli::commands::config::ShowCommand {
                 root: Some(root.to_path_buf()),

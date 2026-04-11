@@ -13,7 +13,7 @@ resolver = "2"
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.86.0"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ifiokjr/lspee"
 homepage = "https://ifiokjr.github.io/lspee/"
@@ -36,18 +36,58 @@ toml = "0.8"
 toml_edit = "0.22"
 url = "2.5"
 
+[workspace.metadata.bin]
+cargo-insta = { version = "1.46.3" }
+cargo-llvm-cov = { version = "0.8.4" }
+cargo-nextest = { version = "0.9.129" }
+cargo-semver-checks = { version = "0.46.0" }
+cargo-deny = { version = "0.19.0" }
+cargo-workspaces = { version = "0.4.2" }
+
 [workspace.lints.rust]
+# Group lints
+rust_2021_compatibility = { level = "warn", priority = -1 }
+rust_2024_compatibility = { level = "warn", priority = -1 }
+
+# Individual lints
 unsafe_code = "forbid"
 missing_debug_implementations = "warn"
-missing_docs = "warn"
-rust_2018_idioms = { level = "deny", priority = -1 }
+missing_docs = "allow"
 unreachable_pub = "warn"
+unstable_features = "deny"
+unused_extern_crates = "warn"
+unused_import_braces = "warn"
+unused_lifetimes = "warn"
+unused_macro_rules = "warn"
+unused_qualifications = "warn"
+variant_size_differences = "warn"
+edition_2024_expr_fragment_specifier = "allow"
 
 [workspace.lints.clippy]
+# Group lints
+complexity = { level = "warn", priority = -1 }
+correctness = { level = "deny", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
-cargo = { level = "warn", priority = -1 }
-module_name_repetitions = "allow"
-multiple_crate_versions = "allow"
+perf = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+
+# Individual lints
+blocks_in_conditions = "allow"
+cargo_common_metadata = "allow"
+cast_possible_truncation = "allow"
+cast_possible_wrap = "allow"
+cast_precision_loss = "allow"
+cast_sign_loss = "allow"
+expl_impl_clone_on_copy = "allow"
+items_after_statements = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+multiple_crate_versions = "allow"
+must_use_candidate = "allow"
+no_effect_underscore_binding = "allow"
+tabs-in-doc-comments = "allow"
+too_many_lines = "allow"
+wildcard_dependencies = "deny"
+wildcard_imports = "allow"

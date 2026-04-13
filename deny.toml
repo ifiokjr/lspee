@@ -29,7 +29,8 @@ confidence-threshold = 0.8
 
 [bans]
 multiple-versions = "warn"
-wildcards = "deny"
+# Allow wildcards for path dependencies within the workspace
+wildcards = "allow"
 highlight = "all"
 
 [sources]

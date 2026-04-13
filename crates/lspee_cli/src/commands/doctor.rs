@@ -27,6 +27,7 @@ pub struct DoctorCommand {
 
 pub fn run(cmd: DoctorCommand) -> anyhow::Result<()> {
 	let runtime = tokio::runtime::Runtime::new()?;
+
 	runtime.block_on(run_async(cmd))
 }
 
@@ -95,6 +96,7 @@ async fn run_async(cmd: DoctorCommand) -> anyhow::Result<()> {
 					"lsp_binaries": lsp_health,
 				}
 			});
+
 			println!("{}", serde_json::to_string(&payload)?);
 		}
 	}

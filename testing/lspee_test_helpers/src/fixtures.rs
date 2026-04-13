@@ -1,4 +1,5 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
 /// Returns the path to the project-root `fixtures/` directory.
 pub fn fixtures_dir() -> PathBuf {
@@ -27,11 +28,13 @@ pub fn setup_fixture(name: &str) -> (tempfile::TempDir, PathBuf) {
 	let temp = tempfile::tempdir().expect("should create temp dir");
 	copy_dir_recursive(&source, temp.path()).expect("should copy fixture");
 	let canonical = std::fs::canonicalize(temp.path()).expect("should canonicalize");
+
 	(temp, canonical)
 }
 
 fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
 	std::fs::create_dir_all(dst)?;
+
 	for entry in std::fs::read_dir(src)? {
 		let entry = entry?;
 		let src_path = entry.path();
@@ -43,5 +46,6 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
 			std::fs::copy(&src_path, &dst_path)?;
 		}
 	}
+
 	Ok(())
 }

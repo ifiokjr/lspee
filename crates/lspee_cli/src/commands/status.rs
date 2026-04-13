@@ -38,6 +38,7 @@ pub struct StatusCommand {
 
 pub fn run(cmd: StatusCommand) -> anyhow::Result<()> {
 	let runtime = tokio::runtime::Runtime::new()?;
+
 	runtime.block_on(run_async(cmd))
 }
 
@@ -57,6 +58,7 @@ async fn run_async(cmd: StatusCommand) -> anyhow::Result<()> {
 	};
 
 	client::write_frame(&mut writer, &request).await?;
+
 	let response = client::read_response_for_id(&mut lines, &req_id).await?;
 	client::ensure_not_error(&response)?;
 
@@ -100,6 +102,7 @@ async fn run_async(cmd: StatusCommand) -> anyhow::Result<()> {
 				"project_root": resolved.project_root,
 				"stats": stats,
 			});
+
 			println!("{}", serde_json::to_string(&payload)?);
 		}
 	}

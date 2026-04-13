@@ -185,14 +185,15 @@ pub struct ResolvedConfig {
 
 pub fn resolve(project_root_override: Option<&Path>) -> Result<ResolvedConfig, ConfigError> {
 	let project_root = canonical_project_root(project_root_override)?;
-
 	let mut merged = default_config();
 	let user_path = user_config_path();
+
 	if let Some(user_cfg) = load_partial_if_exists(&user_path)? {
 		apply_partial(&mut merged, user_cfg);
 	}
 
 	let project_path = project_root.join(PROJECT_CONFIG_FILE);
+
 	if let Some(project_cfg) = load_partial_if_exists(&project_path)? {
 		apply_partial(&mut merged, project_cfg);
 	}
@@ -231,13 +232,17 @@ pub fn hash_identity(project_root: &Path, merged_config: &EffectiveConfig) -> St
 }
 
 fn canonical_project_root(project_root_override: Option<&Path>) -> Result<PathBuf, ConfigError> {
-	let root = match project_root_override {
-		Some(path) => path.to_path_buf(),
-		None => std::env::current_dir().map_err(|source| ConfigError::Read {
-			path: PathBuf::from("."),
-			source,
-		})?,
-	};
+	let root = project_root_override.map_or_else(
+		|| {
+			std::env::current_dir().map_err(|source| {
+				ConfigError::Read {
+					path: PathBuf::from("."),
+					source,
+				}
+			})
+		},
+		|path| Ok(path.to_path_buf()),
+	)?;
 
 	fs::canonicalize(&root).map_err(|source| ConfigError::Canonicalize { path: root, source })
 }
@@ -247,14 +252,18 @@ fn load_partial_if_exists(path: &Path) -> Result<Option<PartialConfig>, ConfigEr
 		return Ok(None);
 	}
 
-	let raw = fs::read_to_string(path).map_err(|source| ConfigError::Read {
-		path: path.to_path_buf(),
-		source,
+	let raw = fs::read_to_string(path).map_err(|source| {
+		ConfigError::Read {
+			path: path.to_path_buf(),
+			source,
+		}
 	})?;
 
-	let parsed = toml::from_str(&raw).map_err(|source| ConfigError::Parse {
-		path: path.to_path_buf(),
-		source,
+	let parsed = toml::from_str(&raw).map_err(|source| {
+		ConfigError::Parse {
+			path: path.to_path_buf(),
+			source,
+		}
 	})?;
 
 	Ok(Some(parsed))
@@ -285,54 +294,70 @@ fn default_config() -> EffectiveConfig {
 }
 
 fn apply_partial(merged: &mut EffectiveConfig, partial: PartialConfig) {
+	// Apply LSP configurations
 	for lsp in partial.lsp {
 		let id = lsp.id.clone().unwrap_or_else(|| "default".to_string());
-		let entry = merged.lsps.entry(id.clone()).or_insert_with(|| LspConfig {
-			id: id.clone(),
-			command: String::new(),
-			args: Vec::new(),
-			env: BTreeMap::new(),
-			initialization_options: BTreeMap::new(),
+		let entry = merged.lsps.entry(id.clone()).or_insert_with(|| {
+			LspConfig {
+				id: id.clone(),
+				command: String::new(),
+				args: Vec::new(),
+				env: BTreeMap::new(),
+				initialization_options: BTreeMap::new(),
+			}
 		});
 
 		if let Some(command) = lsp.command {
 			entry.command = command;
 		}
+
 		if let Some(args) = lsp.args {
 			entry.args = args;
 		}
+
 		if let Some(env) = lsp.env {
 			entry.env = env;
 		}
+
 		if let Some(initialization_options) = lsp.initialization_options {
 			entry.initialization_options = initialization_options;
 		}
 	}
 
+	// Apply top-level configuration
 	if let Some(root_markers) = partial.root_markers {
 		merged.root_markers = root_markers;
 	}
+
 	if let Some(workspace_mode) = partial.workspace_mode {
 		merged.workspace_mode = workspace_mode;
 	}
+
 	if let Some(transport_flags) = partial.transport_flags {
 		merged.transport_flags = transport_flags;
 	}
+
+	// Apply memory configuration
 	if let Some(memory) = partial.memory {
 		if let Some(max_session_mb) = memory.max_session_mb {
 			merged.memory.max_session_mb = Some(max_session_mb);
 		}
+
 		if let Some(max_total_mb) = memory.max_total_mb {
 			merged.memory.max_total_mb = Some(max_total_mb);
 		}
+
 		if let Some(check_interval_ms) = memory.check_interval_ms {
 			merged.memory.check_interval_ms = check_interval_ms;
 		}
 	}
+
+	// Apply session configuration
 	if let Some(session) = partial.session {
 		if let Some(idle_ttl_secs) = session.idle_ttl_secs {
 			merged.session.idle_ttl_secs = idle_ttl_secs;
 		}
+
 		if let Some(daemon_idle_ttl_secs) = session.daemon_idle_ttl_secs {
 			merged.session.daemon_idle_ttl_secs = Some(daemon_idle_ttl_secs);
 		}
@@ -382,7 +407,6 @@ idle_ttl_secs = 600
 	#[test]
 	fn apply_partial_merges_multiple_lsps_by_id() {
 		let mut merged = default_config();
-
 		let partial = PartialConfig {
 			lsp: vec![
 				PartialLspConfig {
@@ -421,7 +445,6 @@ idle_ttl_secs = 600
 	#[test]
 	fn apply_partial_overwrites_same_id() {
 		let mut merged = default_config();
-
 		let first = PartialConfig {
 			lsp: vec![PartialLspConfig {
 				id: Some("ra".to_string()),
@@ -432,6 +455,7 @@ idle_ttl_secs = 600
 			}],
 			..Default::default()
 		};
+
 		apply_partial(&mut merged, first);
 		assert_eq!(merged.lsps["ra"].command, "old-command");
 
@@ -445,6 +469,7 @@ idle_ttl_secs = 600
 			}],
 			..Default::default()
 		};
+
 		apply_partial(&mut merged, second);
 		assert_eq!(merged.lsps["ra"].command, "new-command");
 		// args from first layer are preserved since second didn't set them

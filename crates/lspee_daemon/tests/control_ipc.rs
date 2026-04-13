@@ -43,6 +43,7 @@ fn unique_temp_dir(name: &str) -> PathBuf {
 		.expect("system time should be valid")
 		.as_nanos();
 	let dir = PathBuf::from("/tmp").join(format!("lspee-daemon-test-{name}-{nanos}"));
+
 	fs::create_dir_all(&dir).expect("temp dir should be created");
 	fs::canonicalize(&dir).expect("temp dir should canonicalize")
 }
@@ -71,6 +72,7 @@ args = []
 fn spawn_daemon(root: &Path) -> JoinHandle<anyhow::Result<()>> {
 	let resolved = lspee_config::resolve(Some(root)).expect("config should resolve");
 	let daemon = Daemon::new(root.to_path_buf(), resolved);
+
 	tokio::spawn(async move { daemon.run().await })
 }
 
@@ -94,6 +96,7 @@ async fn write_frame(
 ) {
 	let mut bytes = serde_json::to_vec(envelope).expect("envelope should serialize");
 	bytes.push(b'\n');
+
 	writer
 		.write_all(&bytes)
 		.await
@@ -116,6 +119,7 @@ async fn read_for_id(
 
 		let response: ControlEnvelope<Value> =
 			serde_json::from_str(&line).expect("daemon response should decode");
+
 		if response.id.as_deref() == Some(expected_id) {
 			return response;
 		}
@@ -280,8 +284,8 @@ async fn attach_call_release_and_stats_flow() {
 	assert_eq!(stats_response.payload["leases"], 0);
 
 	shutdown_daemon(&mut writer, &mut lines).await;
-	let _ = daemon_task.await;
 
+	let _ = daemon_task.await;
 	let _ = fs::remove_dir_all(root);
 }
 
@@ -324,8 +328,8 @@ async fn same_session_key_reuses_spawned_worker() {
 	);
 
 	shutdown_daemon(&mut writer, &mut lines).await;
-	let _ = daemon_task.await;
 
+	let _ = daemon_task.await;
 	let _ = fs::remove_dir_all(root);
 }
 
@@ -363,8 +367,8 @@ async fn different_config_hashes_spawn_distinct_sessions() {
 	assert_eq!(stats_response.payload["sessions"], 2);
 
 	shutdown_daemon(&mut writer, &mut lines).await;
-	let _ = daemon_task.await;
 
+	let _ = daemon_task.await;
 	let _ = fs::remove_dir_all(root);
 }
 
@@ -415,6 +419,7 @@ async fn dedicated_stream_forwards_bidirectional_lsp_frames() {
 	};
 	let mut bytes = serde_json::to_vec(&request_frame).expect("stream frame should encode");
 	bytes.push(b'\n');
+
 	stream_writer
 		.write_all(&bytes)
 		.await
@@ -440,6 +445,7 @@ async fn dedicated_stream_forwards_bidirectional_lsp_frames() {
 
 	drop(stream_writer);
 	shutdown_daemon(&mut writer, &mut lines).await;
+
 	let _ = daemon_task.await;
 	let _ = fs::remove_dir_all(root);
 }
@@ -482,6 +488,7 @@ check_interval_ms = 25
 	let mut stream_lines = BufReader::new(stream_reader).lines();
 
 	let mut saw_eviction = false;
+
 	for _ in 0..100 {
 		if let Some(line) = stream_lines
 			.next_line()
@@ -490,6 +497,7 @@ check_interval_ms = 25
 		{
 			let response: lspee_daemon::StreamFrame<Value> =
 				serde_json::from_str(&line).expect("stream response should decode");
+
 			if matches!(
 				response.frame_type,
 				lspee_daemon::StreamFrameType::StreamError
@@ -507,6 +515,7 @@ check_interval_ms = 25
 	assert!(saw_eviction, "expected memory eviction stream error");
 
 	shutdown_daemon(&mut writer, &mut lines).await;
+
 	let _ = daemon_task.await;
 	let _ = fs::remove_dir_all(root);
 }
@@ -574,6 +583,7 @@ idle_ttl_secs = 1
 	);
 
 	shutdown_daemon(&mut writer, &mut lines).await;
+
 	let _ = daemon_task.await;
 	let _ = fs::remove_dir_all(root);
 }
@@ -670,6 +680,7 @@ daemon_idle_ttl_secs = 2
 	assert_eq!(stats.payload["sessions"], 1, "session should still exist");
 
 	shutdown_daemon(&mut writer, &mut lines).await;
+
 	let _ = daemon_task.await;
 	let _ = fs::remove_dir_all(root);
 }

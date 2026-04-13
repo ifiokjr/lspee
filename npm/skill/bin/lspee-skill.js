@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, cpSync, mkdirSync, existsSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -19,7 +19,11 @@ const { values } = parseArgs({
 	strict: true,
 });
 
-if (values.help || (!values["print-skill"] && !values["print-reference"] && !values["print-install"] && !values.copy)) {
+if (
+	values.help ||
+	(!values["print-skill"] && !values["print-reference"] &&
+		!values["print-install"] && !values.copy)
+) {
 	console.log(`lspee-skill — agent skill helper for lspee
 
 Usage:

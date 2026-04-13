@@ -76,31 +76,31 @@ To configure in an MCP client (e.g. Claude Desktop), add to your MCP settings:
 
 ```json
 {
-  "mcpServers": {
-    "lspee": {
-      "command": "lspee",
-      "args": ["mcp", "--project-root", "/path/to/project"]
-    }
-  }
+	"mcpServers": {
+		"lspee": {
+			"command": "lspee",
+			"args": ["mcp", "--project-root", "/path/to/project"]
+		}
+	}
 }
 ```
 
 ## All CLI commands
 
-| Command | Purpose |
-|---------|---------|
-| `lspee lsp` | Show resolved config identity (project root, config hash, LSPs) |
-| `lspee lsps` | Discover available LSPs for a file |
-| `lspee call` | Send a raw JSON-RPC request to an LSP |
-| `lspee do <method>` | Ergonomic LSP dispatch (hover, definition, references, etc.) |
-| `lspee capabilities` | Query LSP server capabilities |
-| `lspee config show\|init\|add-lsp\|remove-lsp\|set` | Manage project configuration |
-| `lspee status` | Daemon health check |
-| `lspee stop` | Stop the daemon |
-| `lspee restart` | Restart the daemon |
-| `lspee serve` | Run the daemon in the foreground |
-| `lspee mcp` | Start MCP server over stdio |
-| `lspee doctor` | Environment and integration health checks |
+| Command                                             | Purpose                                                         |
+| --------------------------------------------------- | --------------------------------------------------------------- |
+| `lspee lsp`                                         | Show resolved config identity (project root, config hash, LSPs) |
+| `lspee lsps`                                        | Discover available LSPs for a file                              |
+| `lspee call`                                        | Send a raw JSON-RPC request to an LSP                           |
+| `lspee do <method>`                                 | Ergonomic LSP dispatch (hover, definition, references, etc.)    |
+| `lspee capabilities`                                | Query LSP server capabilities                                   |
+| `lspee config show\|init\|add-lsp\|remove-lsp\|set` | Manage project configuration                                    |
+| `lspee status`                                      | Daemon health check                                             |
+| `lspee stop`                                        | Stop the daemon                                                 |
+| `lspee restart`                                     | Restart the daemon                                              |
+| `lspee serve`                                       | Run the daemon in the foreground                                |
+| `lspee mcp`                                         | Start MCP server over stdio                                     |
+| `lspee doctor`                                      | Environment and integration health checks                       |
 
 ## Guidance
 

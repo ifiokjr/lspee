@@ -1,8 +1,6 @@
 # lspee
 
-[![Book](https://img.shields.io/badge/book-ifiokjr.github.io%2Flspee-blue)](https://ifiokjr.github.io/lspee/)
-[![CI](https://github.com/ifiokjr/lspee/actions/workflows/ci.yml/badge.svg)](https://github.com/ifiokjr/lspee/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/ifiokjr/lspee/branch/main/graph/badge.svg)](https://codecov.io/gh/ifiokjr/lspee)
+[![Book](https://img.shields.io/badge/book-ifiokjr.github.io%2Flspee-blue)](https://ifiokjr.github.io/lspee/) [![CI](https://github.com/ifiokjr/lspee/actions/workflows/ci.yml/badge.svg)](https://github.com/ifiokjr/lspee/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/ifiokjr/lspee/branch/main/graph/badge.svg)](https://codecov.io/gh/ifiokjr/lspee)
 
 `lspee` is a local LSP multiplexer for fast, shared, per-workspace language-server access.
 
@@ -19,14 +17,14 @@ Windows named-pipe support is not yet implemented.
 
 ## Workspace crates
 
-| Crate | Description |
-|-------|-------------|
-| [`lspee_cli`](crates/lspee_cli) | `lspee` binary and command UX |
-| [`lspee_daemon`](crates/lspee_daemon) | Daemon socket server + session lifecycle |
-| [`lspee_lsp`](crates/lspee_lsp) | JSON-RPC/LSP subprocess bridge |
-| [`lspee_config`](crates/lspee_config) | Config layering + identity hashing + language catalog |
-| [`lspee_protocol`](crates/lspee_protocol) | Shared control-protocol models |
-| [`lspee`](crates/lspee) | Reservation stub crate for package-name preservation |
+| Crate                                     | Description                                           |
+| ----------------------------------------- | ----------------------------------------------------- |
+| [`lspee_cli`](crates/lspee_cli)           | `lspee` binary and command UX                         |
+| [`lspee_daemon`](crates/lspee_daemon)     | Daemon socket server + session lifecycle              |
+| [`lspee_lsp`](crates/lspee_lsp)           | JSON-RPC/LSP subprocess bridge                        |
+| [`lspee_config`](crates/lspee_config)     | Config layering + identity hashing + language catalog |
+| [`lspee_protocol`](crates/lspee_protocol) | Shared control-protocol models                        |
+| [`lspee`](crates/lspee)                   | Reservation stub crate for package-name preservation  |
 
 ## Install / build
 

@@ -37,7 +37,7 @@ lspee is an agent-first LSP multiplexer for fast, shared, per-workspace language
   - Use sentence case without a full stop at the end (e.g., "Add support for workspace symbols", "Fix memory leak in daemon").
   - Keep titles short enough to fit on one line.
   - Use backticks for code references when helpful (e.g., "`lspee do` should support multiple files").
-  
+
 - **Pull Requests**:
   - Must use Conventional Commits syntax for the PR title (e.g., `feat: add hover support`, `refactor: simplify session registry`).
   - PRs should use conventional commit syntax because they are squash-merged; the title becomes the commit message.
@@ -64,24 +64,24 @@ The workspace is organized into six crates under `crates/`:
 
 All commands are available as devenv scripts. Run them inside `devenv shell` or prefix with `devenv shell --`:
 
-| Command | Description |
-|---|---|
-| `build:all` | Build all crates in the workspace |
-| `build:book` | Build the mdbook documentation |
-| `test:all` | Run all tests (nextest + doc tests) |
-| `test:cargo` | Run cargo tests with nextest |
-| `test:docs` | Run documentation tests |
-| `lint:all` | Run all checks (clippy + format + deny) |
-| `lint:clippy` | Check clippy lints |
-| `lint:format` | Check dprint formatting |
-| `fix:all` | Fix all autofixable problems |
-| `fix:clippy` | Auto-fix clippy lints |
-| `fix:format` | Format files with dprint |
-| `deny:check` | Run cargo-deny security/license checks |
-| `coverage:all` | Generate lcov coverage report |
-| `install:all` | Install all required cargo binaries |
-| `snapshot:review` | Review insta snapshots |
-| `snapshot:update` | Update insta snapshots |
+| Command           | Description                             |
+| ----------------- | --------------------------------------- |
+| `build:all`       | Build all crates in the workspace       |
+| `build:book`      | Build the mdbook documentation          |
+| `test:all`        | Run all tests (nextest + doc tests)     |
+| `test:cargo`      | Run cargo tests with nextest            |
+| `test:docs`       | Run documentation tests                 |
+| `lint:all`        | Run all checks (clippy + format + deny) |
+| `lint:clippy`     | Check clippy lints                      |
+| `lint:format`     | Check dprint formatting                 |
+| `fix:all`         | Fix all autofixable problems            |
+| `fix:clippy`      | Auto-fix clippy lints                   |
+| `fix:format`      | Format files with dprint                |
+| `deny:check`      | Run cargo-deny security/license checks  |
+| `coverage:all`    | Generate lcov coverage report           |
+| `install:all`     | Install all required cargo binaries     |
+| `snapshot:review` | Review insta snapshots                  |
+| `snapshot:update` | Update insta snapshots                  |
 
 ## NPM package publishing
 

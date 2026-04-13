@@ -113,6 +113,8 @@ pub fn run(cmd: &ConfigCommand) -> anyhow::Result<()> {
 	}
 }
 
+// --- command handlers ---
+
 fn run_show(cmd: &ShowCommand) -> anyhow::Result<()> {
 	let resolved = resolve(cmd.root.as_deref())?;
 
@@ -150,7 +152,9 @@ fn run_init(cmd: &InitCommand) -> anyhow::Result<()> {
 
 	let template = generate_init_template(&project_root);
 	std::fs::write(&config_path, &template)?;
+
 	println!("{}", config_path.display());
+
 	Ok(())
 }
 
@@ -158,17 +162,19 @@ fn run_add_lsp(cmd: &AddLspCommand) -> anyhow::Result<()> {
 	let project_root = canonical_root(cmd.root.as_deref())?;
 	let config_path = project_root.join("lspee.toml");
 	let mut doc = load_or_create_doc(&config_path)?;
-
 	let lsp_array = ensure_lsp_array(&mut doc);
 
 	// Check if entry with this id already exists; update it if so.
 	let mut found = false;
+
 	for entry in lsp_array.iter_mut() {
 		if entry.get("id").and_then(|v| v.as_str()) == Some(&cmd.id) {
 			entry["command"] = toml_edit::value(&cmd.command);
+
 			if let Some(ref args) = cmd.args {
 				entry["args"] = toml_edit::value(to_toml_array(args));
 			}
+
 			found = true;
 			break;
 		}
@@ -178,13 +184,16 @@ fn run_add_lsp(cmd: &AddLspCommand) -> anyhow::Result<()> {
 		let mut table = Table::new();
 		table.insert("id", toml_edit::value(&cmd.id));
 		table.insert("command", toml_edit::value(&cmd.command));
+
 		let args = cmd.args.as_deref().unwrap_or(&[]);
 		table.insert("args", toml_edit::value(to_toml_array(args)));
 		lsp_array.push(table);
 	}
 
 	std::fs::write(&config_path, doc.to_string())?;
+
 	println!("{}", if found { "updated" } else { "added" });
+
 	Ok(())
 }
 
@@ -208,6 +217,7 @@ fn run_remove_lsp(cmd: &RemoveLspCommand) -> anyhow::Result<()> {
 
 	let original_len = lsp_array.len();
 	let mut idx = 0;
+
 	while idx < lsp_array.len() {
 		if lsp_array
 			.get(idx)
@@ -226,7 +236,9 @@ fn run_remove_lsp(cmd: &RemoveLspCommand) -> anyhow::Result<()> {
 	}
 
 	std::fs::write(&config_path, doc.to_string())?;
+
 	println!("removed");
+
 	Ok(())
 }
 
@@ -244,6 +256,7 @@ fn run_set(cmd: &SetCommand) -> anyhow::Result<()> {
 				.or_insert(Item::Table(Table::new()))
 				.as_table_mut()
 				.ok_or_else(|| anyhow::anyhow!("'{section}' is not a table in lspee.toml"))?;
+
 			table.insert(key, toml_edit::value(value));
 		}
 		[key] => {
@@ -258,7 +271,9 @@ fn run_set(cmd: &SetCommand) -> anyhow::Result<()> {
 	}
 
 	std::fs::write(&config_path, doc.to_string())?;
+
 	println!("set {}={}", cmd.key, cmd.value);
+
 	Ok(())
 }
 
@@ -269,6 +284,7 @@ fn canonical_root(override_root: Option<&Path>) -> anyhow::Result<PathBuf> {
 		Some(path) => path.to_path_buf(),
 		None => std::env::current_dir()?,
 	};
+
 	Ok(std::fs::canonicalize(&root)?)
 }
 
@@ -299,9 +315,11 @@ fn ensure_lsp_array(doc: &mut DocumentMut) -> &mut ArrayOfTables {
 
 fn to_toml_array(items: &[String]) -> toml_edit::Array {
 	let mut array = toml_edit::Array::new();
+
 	for item in items {
 		array.push(item.as_str());
 	}
+
 	array
 }
 
@@ -309,9 +327,11 @@ fn parse_toml_value(s: &str) -> TomlValue {
 	if let Ok(n) = s.parse::<i64>() {
 		return TomlValue::Integer(toml_edit::Formatted::new(n));
 	}
+
 	if let Ok(b) = s.parse::<bool>() {
 		return TomlValue::Boolean(toml_edit::Formatted::new(b));
 	}
+
 	TomlValue::String(toml_edit::Formatted::new(s.to_string()))
 }
 
@@ -322,6 +342,7 @@ fn generate_init_template(project_root: &Path) -> String {
 	if project_root.join("Cargo.toml").exists() {
 		lsps.push(("rust-analyzer", "rust-analyzer", Vec::<&str>::new()));
 	}
+
 	if project_root.join("package.json").exists() || project_root.join("tsconfig.json").exists() {
 		lsps.push((
 			"typescript-language-server",
@@ -329,9 +350,11 @@ fn generate_init_template(project_root: &Path) -> String {
 			vec!["--stdio"],
 		));
 	}
+
 	if project_root.join("pyproject.toml").exists() || project_root.join("setup.py").exists() {
 		lsps.push(("pyright", "pyright-langserver", vec!["--stdio"]));
 	}
+
 	if project_root.join("go.mod").exists() {
 		lsps.push(("gopls", "gopls", Vec::new()));
 	}
@@ -344,19 +367,29 @@ fn generate_init_template(project_root: &Path) -> String {
 			"# No project markers detected. Add LSP entries:\n# [[lsp]]\n# id = \"your-lsp\"\n# \
 			 command = \"your-lsp-binary\"\n# args = []\n",
 		);
-	} else {
-		for (id, command, args) in &lsps {
-			output.push_str("[[lsp]]\n");
-			let _ = writeln!(output, "id = \"{id}\"");
-			let _ = writeln!(output, "command = \"{command}\"");
-			if args.is_empty() {
-				output.push_str("args = []\n");
-			} else {
-				let args_str: Vec<String> = args.iter().map(|a| format!("\"{a}\"")).collect();
-				let _ = writeln!(output, "args = [{}]", args_str.join(", "));
-			}
-			output.push('\n');
+
+		output.push_str(
+			"[session]\nidle_ttl_secs = 300\n\n[memory]\nmax_session_mb = 2048\nmax_total_mb = \
+			 8192\n",
+		);
+
+		return output;
+	}
+
+	for (id, command, args) in &lsps {
+		output.push_str("[[lsp]]\n");
+
+		let _ = writeln!(output, "id = \"{id}\"");
+		let _ = writeln!(output, "command = \"{command}\"");
+
+		if args.is_empty() {
+			output.push_str("args = []\n");
+		} else {
+			let args_str: Vec<String> = args.iter().map(|a| format!("\"{a}\"")).collect();
+			let _ = writeln!(output, "args = [{}]", args_str.join(", "));
 		}
+
+		output.push('\n');
 	}
 
 	output.push_str(

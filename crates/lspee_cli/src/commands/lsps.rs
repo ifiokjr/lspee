@@ -35,9 +35,11 @@ pub fn run(cmd: LspsCommand) -> anyhow::Result<()> {
 					"lsps": [],
 					"hint": "pass --file <path> to query language registry",
 				});
+
 				println!("{}", serde_json::to_string(&payload)?);
 			}
 		}
+
 		return Ok(());
 	};
 
@@ -58,20 +60,15 @@ pub fn run(cmd: LspsCommand) -> anyhow::Result<()> {
 
 	match cmd.output {
 		LspsOutput::Human => {
-			if matches.is_empty() {
-				println!("file={}", file.display());
-				println!("lsps=none");
-				println!("hint=no language server mapping found for file extension");
-				return Ok(());
-			}
-
 			println!("file={}", file.display());
+
 			for lsp in matches {
 				let health = if lsp.executable_found {
 					"ok"
 				} else {
 					"missing"
 				};
+
 				println!(
 					"lsp={} command={} args={:?} health={} root_markers={:?}",
 					lsp.id, lsp.command, lsp.args, health, lsp.root_markers
@@ -83,6 +80,7 @@ pub fn run(cmd: LspsCommand) -> anyhow::Result<()> {
 				"file": file,
 				"lsps": matches,
 			});
+
 			println!("{}", serde_json::to_string(&payload)?);
 		}
 	}

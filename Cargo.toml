@@ -1,25 +1,25 @@
 [workspace]
 members = [
-  "crates/lspee_config",
-  "crates/lspee_cli",
-  "crates/lspee_daemon",
-  "crates/lspee_lsp",
-  "crates/lspee_mcp",
-  "crates/lspee_protocol",
-  "crates/lspee",
+	"crates/lspee",
+	"crates/lspee_cli",
+	"crates/lspee_config",
+	"crates/lspee_daemon",
+	"crates/lspee_lsp",
+	"crates/lspee_mcp",
+	"crates/lspee_protocol",
 ]
 exclude = ["testing/lspee_test_helpers"]
 resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
+authors = ["Ifiok Jr. <ifiokjr@users.noreply.github.com>"]
+documentation = "https://docs.rs/lspee"
 edition = "2024"
-rust-version = "1.88.0"
+homepage = "https://ifiokjr.github.io/lspee/"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ifiokjr/lspee"
-homepage = "https://ifiokjr.github.io/lspee/"
-documentation = "https://docs.rs/lspee"
-authors = ["Ifiok Jr. <ifiokjr@users.noreply.github.com>"]
+rust-version = "1.88.0"
 
 [workspace.dependencies]
 anyhow = { version = "1.0", default-features = false }

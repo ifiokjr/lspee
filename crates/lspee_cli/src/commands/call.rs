@@ -71,6 +71,7 @@ pub struct CallCommand {
 
 pub fn run(cmd: CallCommand) -> anyhow::Result<()> {
 	let runtime = tokio::runtime::Runtime::new()?;
+
 	runtime.block_on(run_async(cmd))
 }
 
@@ -81,6 +82,12 @@ async fn run_async(cmd: CallCommand) -> anyhow::Result<()> {
 	let stream = client::connect(&resolved.project_root, !cmd.no_start_daemon).await?;
 	let (reader, mut writer) = stream.into_split();
 	let mut lines = BufReader::new(reader).lines();
+
+	let client_kind = match cmd.client_kind {
+		CallClientKind::Agent => ClientKind::Agent,
+		CallClientKind::Human => ClientKind::Human,
+		CallClientKind::Ci => ClientKind::Ci,
+	};
 
 	let attach_id = client::new_request_id("attach");
 	let attach = ControlEnvelope {
@@ -96,11 +103,7 @@ async fn run_async(cmd: CallCommand) -> anyhow::Result<()> {
 			client_meta: ClientMeta {
 				client_name: "lspee_cli".to_string(),
 				client_version: env!("CARGO_PKG_VERSION").to_string(),
-				client_kind: Some(match cmd.client_kind {
-					CallClientKind::Agent => ClientKind::Agent,
-					CallClientKind::Human => ClientKind::Human,
-					CallClientKind::Ci => ClientKind::Ci,
-				}),
+				client_kind: Some(client_kind),
 				pid: Some(process::id()),
 				cwd: std::env::current_dir()
 					.ok()
@@ -113,8 +116,10 @@ async fn run_async(cmd: CallCommand) -> anyhow::Result<()> {
 	};
 
 	client::write_frame(&mut writer, &attach).await?;
+
 	let attach_response = client::read_response_for_id(&mut lines, &attach_id).await?;
 	client::ensure_not_error(&attach_response)?;
+
 	if attach_response.message_type != TYPE_ATTACH_OK {
 		anyhow::bail!(
 			"unexpected response type for Attach: {}",
@@ -141,16 +146,19 @@ async fn run_async(cmd: CallCommand) -> anyhow::Result<()> {
 	};
 
 	client::write_frame(&mut writer, &call).await?;
+
 	let call_response = client::read_response_for_id(&mut lines, &call_id).await;
 
 	// Always attempt lease release once attached.
 	let release_result = release_lease(&mut writer, &mut lines, &lease_id).await;
+
 	if let Err(error) = release_result {
 		tracing::warn!(?error, lease_id, "failed to release lease after call");
 	}
 
 	let call_response = call_response?;
 	client::ensure_not_error(&call_response)?;
+
 	if call_response.message_type != TYPE_CALL_OK {
 		anyhow::bail!(
 			"unexpected response type for Call: {}",
@@ -186,8 +194,10 @@ async fn release_lease(
 	};
 
 	client::write_frame(writer, &release).await?;
+
 	let release_response = client::read_response_for_id(lines, &release_id).await?;
 	client::ensure_not_error(&release_response)?;
+
 	if release_response.message_type != TYPE_RELEASE_OK {
 		anyhow::bail!(
 			"unexpected response type for Release: {}",
@@ -207,5 +217,6 @@ fn load_request_payload(request: &str) -> anyhow::Result<Value> {
 
 	let payload: Value = serde_json::from_str(&content)
 		.map_err(|e| anyhow::anyhow!("invalid JSON request payload: {e}"))?;
+
 	Ok(payload)
 }

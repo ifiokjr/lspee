@@ -113,39 +113,45 @@ impl LspRuntime {
 
 	#[instrument(skip(self))]
 	pub async fn shutdown(&self) -> Result<()> {
-		let _ = self
-			.send(json!({"jsonrpc":"2.0","id":"lspee-shutdown","method":"shutdown","params":null}))
-			.await;
-		let _ = self
-			.send(json!({"jsonrpc":"2.0","method":"exit","params":null}))
-			.await;
+		let shutdown_msg =
+			json!({"jsonrpc":"2.0","id":"lspee-shutdown","method":"shutdown","params":null});
+		let exit_msg = json!({"jsonrpc":"2.0","method":"exit","params":null});
+
+		let _ = self.send(shutdown_msg).await;
+		let _ = self.send(exit_msg).await;
 
 		let mut child = self.child.lock().await;
 		let result = timeout(Duration::from_secs(2), child.wait()).await;
+
 		if let Ok(wait_result) = result {
 			wait_result.context("failed waiting for lsp child process to exit")?;
-			Ok(())
-		} else {
-			child
-				.kill()
-				.await
-				.context("failed to kill lsp child after graceful shutdown timeout")?;
-			Ok(())
+			return Ok(());
 		}
+
+		child
+			.kill()
+			.await
+			.context("failed to kill lsp child after graceful shutdown timeout")?;
+
+		Ok(())
 	}
 
 	pub async fn force_stop(&self) -> Result<()> {
 		let mut child = self.child.lock().await;
-		if child
+		let already_exited = child
 			.try_wait()
 			.context("failed to query lsp child state")?
-			.is_none()
-		{
-			child
-				.kill()
-				.await
-				.context("failed to kill lsp child process")?;
+			.is_some();
+
+		if already_exited {
+			return Ok(());
 		}
+
+		child
+			.kill()
+			.await
+			.context("failed to kill lsp child process")?;
+
 		Ok(())
 	}
 
@@ -213,6 +219,7 @@ impl LspTransport {
 	pub async fn spawn(&self, lsp: &lspee_config::LspConfig) -> Result<LspRuntime> {
 		self.prepare(lsp)?;
 
+		// Setup process
 		let mut cmd = Command::new(&lsp.command);
 		cmd.args(&lsp.args)
 			.envs(&lsp.env)
@@ -237,9 +244,11 @@ impl LspTransport {
 		let writer = Arc::new(Mutex::new(stdin));
 		let child = Arc::new(Mutex::new(child));
 
+		// Setup channels
 		let (inbound_tx, mut inbound_rx) = mpsc::channel::<Value>(256);
 		let (outbound_tx, _) = broadcast::channel::<LspMessage>(256);
 
+		// Spawn writer task
 		let writer_task = Arc::clone(&writer);
 		tokio::spawn(async move {
 			while let Some(msg) = inbound_rx.recv().await {
@@ -252,10 +261,12 @@ impl LspTransport {
 				};
 
 				let mut guard = writer_task.lock().await;
+
 				if let Err(err) = guard.write_all(&frame).await {
 					tracing::error!(error = ?err, "failed to write lsp frame to stdin");
 					break;
 				}
+
 				if let Err(err) = guard.flush().await {
 					tracing::error!(error = ?err, "failed to flush lsp stdin");
 					break;
@@ -263,9 +274,11 @@ impl LspTransport {
 			}
 		});
 
+		// Spawn reader task
 		let outbound = outbound_tx.clone();
 		tokio::spawn(async move {
 			let mut reader = BufReader::new(stdout);
+
 			loop {
 				let payload = match read_lsp_frame(&mut reader).await {
 					Ok(Some(payload)) => payload,
@@ -319,6 +332,7 @@ where
 {
 	let mut content_length: Option<usize> = None;
 
+	// Read headers
 	loop {
 		let mut line = String::new();
 		let bytes = reader
@@ -331,6 +345,7 @@ where
 		}
 
 		let line = line.trim_end_matches(['\r', '\n']);
+
 		if line.is_empty() {
 			break;
 		}
@@ -344,6 +359,7 @@ where
 		}
 	}
 
+	// Read body
 	let content_length = content_length.ok_or_else(|| anyhow!("missing Content-Length header"))?;
 	let mut body = vec![0_u8; content_length];
 	reader
@@ -353,6 +369,7 @@ where
 
 	let payload: Value =
 		serde_json::from_slice(&body).context("failed to decode lsp frame JSON payload")?;
+
 	Ok(Some(payload))
 }
 
@@ -388,6 +405,7 @@ mod tests {
 
 		let dir = std::env::temp_dir().join(format!("lspee-lsp-{name}-{nanos}"));
 		fs::create_dir_all(&dir).expect("should create temp dir");
+
 		dir
 	}
 

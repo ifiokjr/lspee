@@ -29,7 +29,9 @@ pub struct ServeCommand {
 
 pub fn run(cmd: ServeCommand) -> anyhow::Result<()> {
 	init_tracing(&cmd)?;
+
 	let runtime = tokio::runtime::Runtime::new()?;
+
 	runtime.block_on(run_async(cmd))
 }
 
@@ -87,5 +89,6 @@ fn init_tracing(cmd: &ServeCommand) -> anyhow::Result<()> {
 async fn run_async(cmd: ServeCommand) -> anyhow::Result<()> {
 	let resolved = lspee_config::resolve(cmd.project_root.as_deref())?;
 	let daemon = lspee_daemon::Daemon::new(resolved.project_root.clone(), resolved);
+
 	daemon.run().await
 }

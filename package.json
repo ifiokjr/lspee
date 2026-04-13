@@ -1,13 +1,13 @@
 {
-  "private": true,
-  "name": "@ifi/lspee-root",
-  "description": "Monorepo root for lspee npm packages",
-  "license": "MIT OR Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ifiokjr/lspee.git"
-  },
-  "engines": {
-    "node": ">=18"
-  }
+	"private": true,
+	"name": "@ifi/lspee-root",
+	"description": "Monorepo root for lspee npm packages",
+	"license": "MIT OR Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ifiokjr/lspee.git"
+	},
+	"engines": {
+		"node": ">=18"
+	}
 }

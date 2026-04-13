@@ -1,4 +1,5 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use lspee_daemon::Daemon;
@@ -28,6 +29,7 @@ impl DaemonHandle {
 		});
 
 		let socket = root.join(".lspee").join("daemon.sock");
+
 		for _ in 0..200 {
 			if std::os::unix::net::UnixStream::connect(&socket).is_ok() {
 				return Self {
@@ -37,6 +39,7 @@ impl DaemonHandle {
 			}
 			std::thread::sleep(Duration::from_millis(25));
 		}
+
 		panic!(
 			"daemon socket did not become available at {}",
 			socket.display()
@@ -50,11 +53,18 @@ impl DaemonHandle {
 
 	fn shutdown_internal(&mut self) {
 		let rt = tokio::runtime::Runtime::new().unwrap();
+
 		rt.block_on(async {
-			use lspee_daemon::{ControlEnvelope, PROTOCOL_VERSION, Shutdown, TYPE_SHUTDOWN};
-			use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+			use lspee_daemon::ControlEnvelope;
+			use lspee_daemon::PROTOCOL_VERSION;
+			use lspee_daemon::Shutdown;
+			use lspee_daemon::TYPE_SHUTDOWN;
+			use tokio::io::AsyncBufReadExt;
+			use tokio::io::AsyncWriteExt;
+			use tokio::io::BufReader;
 
 			let socket = self.root.join(".lspee").join("daemon.sock");
+
 			if let Ok(stream) = tokio::net::UnixStream::connect(&socket).await {
 				let (reader, mut writer) = stream.into_split();
 				let mut lines = BufReader::new(reader).lines();
@@ -66,11 +76,13 @@ impl DaemonHandle {
 				};
 				let mut bytes = serde_json::to_vec(&envelope).unwrap();
 				bytes.push(b'\n');
+
 				let _ = writer.write_all(&bytes).await;
 				let _ = writer.flush().await;
 				let _ = lines.next_line().await;
 			}
 		});
+
 		if let Some(thread) = self.thread.take() {
 			let _ = thread.join();
 		}

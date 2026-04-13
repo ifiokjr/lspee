@@ -10,5 +10,5 @@ lspee_config = { path = "../../crates/lspee_config" }
 lspee_daemon = { path = "../../crates/lspee_daemon" }
 lspee_lsp = { path = "../../crates/lspee_lsp" }
 serde_json = "1.0"
-tokio = { version = "1.44", features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "net", "process"] }
 tempfile = "3"
+tokio = { version = "1.44", features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "net", "process"] }

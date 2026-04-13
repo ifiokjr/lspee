@@ -44,6 +44,7 @@ pub fn run(cmd: &LspCommand) -> anyhow::Result<()> {
 				"config_hash": resolved.config_hash,
 				"configured_lsps": resolved.merged.lsps,
 			});
+
 			println!("{}", serde_json::to_string(&payload)?);
 		}
 	}

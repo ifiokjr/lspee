@@ -31,12 +31,14 @@ pub async fn connect(project_root: &Path, auto_start: bool) -> Result<UnixStream
 
 	match UnixStream::connect(&socket_path).await {
 		Ok(stream) => return Ok(stream),
+
 		Err(error) if !auto_start => {
 			return Err(anyhow!(
 				"failed to connect to daemon socket {}: {error}",
 				socket_path.display()
 			));
 		}
+
 		Err(error)
 			if !matches!(
 				error.kind(),
@@ -48,6 +50,7 @@ pub async fn connect(project_root: &Path, auto_start: bool) -> Result<UnixStream
 				socket_path.display()
 			));
 		}
+
 		Err(_) => {}
 	}
 
@@ -56,6 +59,7 @@ pub async fn connect(project_root: &Path, auto_start: bool) -> Result<UnixStream
 	for _ in 0..DAEMON_CONNECT_ATTEMPTS {
 		match UnixStream::connect(&socket_path).await {
 			Ok(stream) => return Ok(stream),
+
 			Err(_) => sleep(Duration::from_millis(DAEMON_CONNECT_BACKOFF_MS)).await,
 		}
 	}
@@ -88,6 +92,7 @@ fn spawn_daemon(project_root: &Path) -> Result<()> {
 	if let Ok(log_filter) = std::env::var("LSPEE_LOG") {
 		cmd.env("LSPEE_LOG", log_filter);
 	}
+
 	if let Ok(log_format) = std::env::var("LSPEE_LOG_FORMAT") {
 		cmd.env("LSPEE_LOG_FORMAT", log_format);
 	}
@@ -96,6 +101,7 @@ fn spawn_daemon(project_root: &Path) -> Result<()> {
 		.context("failed to spawn background daemon process")?;
 
 	tracing::debug!(log_file = %log_file.display(), "auto-started daemon");
+
 	Ok(())
 }
 
@@ -104,6 +110,7 @@ pub fn new_request_id(prefix: &str) -> String {
 		.duration_since(UNIX_EPOCH)
 		.map(|d| d.as_nanos())
 		.unwrap_or_default();
+
 	format!("{prefix}-{nanos}")
 }
 
@@ -113,8 +120,10 @@ pub async fn write_frame(
 ) -> Result<()> {
 	let mut bytes = serde_json::to_vec(envelope)?;
 	bytes.push(b'\n');
+
 	writer.write_all(&bytes).await?;
 	writer.flush().await?;
+
 	Ok(())
 }
 
@@ -125,6 +134,7 @@ pub async fn read_response_for_id(
 	while let Some(line) = lines.next_line().await? {
 		let response: ControlEnvelope<Value> = serde_json::from_str(&line)
 			.map_err(|e| anyhow!("invalid daemon response JSON: {e}"))?;
+
 		if response.id.as_deref() == Some(expected_id) {
 			return Ok(response);
 		}
@@ -139,6 +149,7 @@ pub fn ensure_not_error(response: &ControlEnvelope<Value>) -> Result<()> {
 	if response.message_type == TYPE_ERROR {
 		return Err(anyhow!(render_error_payload(&response.payload)));
 	}
+
 	Ok(())
 }
 

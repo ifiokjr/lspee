@@ -440,12 +440,14 @@ impl DoMethod {
 			Self::CodeAction(a) => a.position.shared.clone(),
 			Self::Formatting(a) => a.shared.clone(),
 			Self::Symbols(a) | Self::Diagnostics(a) => a.shared.clone(),
-			Self::WorkspaceSymbols(a) => SharedArgs {
-				lsp: Some(a.lsp.clone()),
-				root: a.root.clone(),
-				no_start_daemon: a.no_start_daemon,
-				output: a.output,
-			},
+			Self::WorkspaceSymbols(a) => {
+				SharedArgs {
+					lsp: Some(a.lsp.clone()),
+					root: a.root.clone(),
+					no_start_daemon: a.no_start_daemon,
+					output: a.output,
+				}
+			}
 		}
 	}
 
@@ -636,9 +638,11 @@ pub fn extract_lsp_result(response: &Value) -> Value {
 	if let Some(result) = response.get("result") {
 		return result.clone();
 	}
+
 	if let Some(error) = response.get("error") {
 		return json!({ "error": error });
 	}
+
 	Value::Null
 }
 
@@ -860,9 +864,11 @@ pub fn enrich_locations(result: &mut Value) {
 				enrich_single_location(item);
 			}
 		}
+
 		Value::Object(_) => {
 			enrich_single_location(result);
 		}
+
 		_ => {}
 	}
 }
@@ -884,6 +890,7 @@ fn enrich_single_location(location: &mut Value) {
 				location["context_line"] = Value::String(context);
 			}
 		}
+
 		return;
 	}
 
@@ -979,6 +986,7 @@ async fn run_async(cmd: DoCommand) -> Result<()> {
 	let did_open_uri = if let Some(file_path) = cmd.method.file_path() {
 		match send_did_open(&mut writer, &mut lines, &lease_id, file_path).await {
 			Ok(uri) => Some(uri),
+
 			Err(error) => {
 				tracing::warn!(?error, "failed to send textDocument/didOpen");
 				None
@@ -1000,6 +1008,7 @@ async fn run_async(cmd: DoCommand) -> Result<()> {
 			request: request_payload,
 		})?,
 	};
+
 	client::write_frame(&mut writer, &call).await?;
 	let call_response = client::read_response_for_id(&mut lines, &call_id).await;
 
@@ -1018,6 +1027,7 @@ async fn run_async(cmd: DoCommand) -> Result<()> {
 
 	let call_response = call_response?;
 	client::ensure_not_error(&call_response)?;
+
 	if call_response.message_type != TYPE_CALL_OK {
 		anyhow::bail!(
 			"unexpected response type for Call: {}",
@@ -1037,6 +1047,7 @@ async fn run_async(cmd: DoCommand) -> Result<()> {
 		elapsed_ms,
 		shared.output,
 	)?;
+
 	println!("{formatted}");
 
 	Ok(())
@@ -1079,6 +1090,7 @@ async fn attach_session(
 	client::write_frame(writer, &attach).await?;
 	let response = client::read_response_for_id(lines, &attach_id).await?;
 	client::ensure_not_error(&response)?;
+
 	if response.message_type != TYPE_ATTACH_OK {
 		anyhow::bail!(
 			"unexpected response type for Attach: {}",
@@ -1114,6 +1126,7 @@ async fn release_lease(
 	client::write_frame(writer, &release).await?;
 	let response = client::read_response_for_id(lines, &release_id).await?;
 	client::ensure_not_error(&response)?;
+
 	if response.message_type != TYPE_RELEASE_OK {
 		anyhow::bail!(
 			"unexpected response type for Release: {}",
@@ -1169,6 +1182,7 @@ async fn send_did_open(
 	client::write_frame(writer, &envelope).await?;
 	let response = client::read_response_for_id(lines, &notify_id).await?;
 	client::ensure_not_error(&response)?;
+
 	if response.message_type != TYPE_NOTIFY_OK {
 		anyhow::bail!(
 			"unexpected response type for Notify (didOpen): {}",
@@ -1211,6 +1225,7 @@ async fn send_did_close(
 	client::write_frame(writer, &envelope).await?;
 	let response = client::read_response_for_id(lines, &notify_id).await?;
 	client::ensure_not_error(&response)?;
+
 	if response.message_type != TYPE_NOTIFY_OK {
 		anyhow::bail!(
 			"unexpected response type for Notify (didClose): {}",

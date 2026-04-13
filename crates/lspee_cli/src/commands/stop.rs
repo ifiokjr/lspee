@@ -21,6 +21,7 @@ pub struct StopCommand {
 
 pub fn run(cmd: StopCommand) -> anyhow::Result<()> {
 	let runtime = tokio::runtime::Runtime::new()?;
+
 	runtime.block_on(run_async(cmd))
 }
 

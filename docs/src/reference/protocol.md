@@ -6,10 +6,10 @@ Envelope:
 
 ```json
 {
-  "v": 1,
-  "id": "req-1",
-  "type": "Attach",
-  "payload": {}
+	"v": 1,
+	"id": "req-1",
+	"type": "Attach",
+	"payload": {}
 }
 ```
 

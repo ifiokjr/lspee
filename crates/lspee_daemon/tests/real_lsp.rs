@@ -70,6 +70,7 @@ fn unique_temp_dir(name: &str) -> PathBuf {
 		.expect("system time should be valid")
 		.as_nanos();
 	let dir = PathBuf::from("/tmp").join(format!("lspee-real-lsp-test-{name}-{nanos}"));
+
 	fs::create_dir_all(&dir).expect("temp dir should be created");
 	fs::canonicalize(&dir).expect("temp dir should canonicalize")
 }
@@ -81,17 +82,14 @@ fn setup_fixture(name: &str) -> PathBuf {
 	let dest = unique_temp_dir(name);
 
 	// Copy Cargo.toml
-	fs::copy(src.join("Cargo.toml"), dest.join("Cargo.toml"))
-		.expect("Cargo.toml should copy");
+	fs::copy(src.join("Cargo.toml"), dest.join("Cargo.toml")).expect("Cargo.toml should copy");
 
 	// Copy lspee.toml
-	fs::copy(src.join("lspee.toml"), dest.join("lspee.toml"))
-		.expect("lspee.toml should copy");
+	fs::copy(src.join("lspee.toml"), dest.join("lspee.toml")).expect("lspee.toml should copy");
 
 	// Copy src/
 	fs::create_dir_all(dest.join("src")).expect("src dir should be created");
-	fs::copy(src.join("src/lib.rs"), dest.join("src/lib.rs"))
-		.expect("src/lib.rs should copy");
+	fs::copy(src.join("src/lib.rs"), dest.join("src/lib.rs")).expect("src/lib.rs should copy");
 
 	dest
 }
@@ -99,6 +97,7 @@ fn setup_fixture(name: &str) -> PathBuf {
 fn spawn_daemon(root: &Path) -> JoinHandle<anyhow::Result<()>> {
 	let resolved = lspee_config::resolve(Some(root)).expect("config should resolve");
 	let daemon = Daemon::new(root.to_path_buf(), resolved);
+
 	tokio::spawn(async move { daemon.run().await })
 }
 
@@ -122,6 +121,7 @@ async fn write_frame(
 ) {
 	let mut bytes = serde_json::to_vec(envelope).expect("envelope should serialize");
 	bytes.push(b'\n');
+
 	writer
 		.write_all(&bytes)
 		.await
@@ -144,6 +144,7 @@ async fn read_for_id(
 
 		let response: ControlEnvelope<Value> =
 			serde_json::from_str(&line).expect("daemon response should decode");
+
 		if response.id.as_deref() == Some(expected_id) {
 			return response;
 		}
@@ -203,8 +204,7 @@ async fn do_attach(
 
 	assert_eq!(
 		response.message_type, TYPE_ATTACH_OK,
-		"attach should succeed, got: {:?}",
-		response
+		"attach should succeed, got: {response:?}"
 	);
 
 	let lease_id = response.payload["lease_id"]
@@ -261,8 +261,7 @@ async fn do_notify(
 
 	assert_eq!(
 		response.message_type, TYPE_NOTIFY_OK,
-		"notify should succeed, got: {:?}",
-		response
+		"notify should succeed, got: {response:?}"
 	);
 }
 
@@ -387,7 +386,7 @@ async fn wait_for_indexing(
 /// `initialize_result` contains real capabilities such as `hoverProvider`
 /// and `definitionProvider`.
 #[tokio::test]
-#[ignore]
+#[ignore = "requires rust-analyzer installed and takes 10-30s for indexing"]
 async fn real_lsp_initialize_returns_capabilities() {
 	let root = setup_fixture("init-caps");
 	let daemon_task = spawn_daemon(&root);
@@ -420,6 +419,7 @@ async fn real_lsp_initialize_returns_capabilities() {
 
 	do_release(&mut writer, &mut lines, &lease_id).await;
 	shutdown_daemon(&mut writer, &mut lines).await;
+
 	let _ = daemon_task.await;
 	let _ = fs::remove_dir_all(root);
 }
@@ -428,7 +428,7 @@ async fn real_lsp_initialize_returns_capabilities() {
 /// `textDocument/hover` on the `add` function. Verify the response contains
 /// hover content describing the function signature.
 #[tokio::test]
-#[ignore]
+#[ignore = "requires rust-analyzer installed and takes 10-30s for indexing"]
 async fn real_lsp_hover_returns_result() {
 	let root = setup_fixture("hover");
 	let daemon_task = spawn_daemon(&root);
@@ -471,8 +471,7 @@ async fn real_lsp_hover_returns_result() {
 
 	assert_eq!(
 		hover_response.message_type, TYPE_CALL_OK,
-		"hover call should succeed: {:?}",
-		hover_response
+		"hover call should succeed: {hover_response:?}"
 	);
 
 	let result = &hover_response.payload["response"]["result"];
@@ -497,6 +496,7 @@ async fn real_lsp_hover_returns_result() {
 
 	do_release(&mut writer, &mut lines, &lease_id).await;
 	shutdown_daemon(&mut writer, &mut lines).await;
+
 	let _ = daemon_task.await;
 	let _ = fs::remove_dir_all(root);
 }
@@ -508,10 +508,9 @@ async fn real_lsp_hover_returns_result() {
 /// We test within a single file to avoid cross-file resolution timing issues
 /// with rust-analyzer startup.
 #[tokio::test]
-#[ignore]
+#[ignore = "requires rust-analyzer installed and takes 10-30s for indexing"]
 async fn real_lsp_definition_resolves() {
 	let root = setup_fixture("definition");
-
 	let daemon_task = spawn_daemon(&root);
 	let socket_path = root.join(".lspee").join("daemon.sock");
 	let stream = connect_with_retry(&socket_path).await;
@@ -558,15 +557,11 @@ async fn real_lsp_definition_resolves() {
 
 	assert_eq!(
 		def_response.message_type, TYPE_CALL_OK,
-		"definition call should succeed: {:?}",
-		def_response
+		"definition call should succeed: {def_response:?}"
 	);
 
 	let result = &def_response.payload["response"]["result"];
-	assert!(
-		!result.is_null(),
-		"definition result should not be null"
-	);
+	assert!(!result.is_null(), "definition result should not be null");
 
 	// rust-analyzer may return a single Location or an array of Locations.
 	let locations: Vec<&Value> = if result.is_array() {
@@ -589,9 +584,7 @@ async fn real_lsp_definition_resolves() {
 			.and_then(Value::as_str)
 			.is_some_and(|uri| uri == lib_uri);
 
-		let range = loc
-			.get("range")
-			.or_else(|| loc.get("targetRange"));
+		let range = loc.get("range").or_else(|| loc.get("targetRange"));
 		let line_matches = range
 			.and_then(|r| r.get("start"))
 			.and_then(|s| s.get("line"))
@@ -607,6 +600,7 @@ async fn real_lsp_definition_resolves() {
 
 	do_release(&mut writer, &mut lines, &lease_id).await;
 	shutdown_daemon(&mut writer, &mut lines).await;
+
 	let _ = daemon_task.await;
 	let _ = fs::remove_dir_all(root);
 }
@@ -614,7 +608,7 @@ async fn real_lsp_definition_resolves() {
 /// Send `workspace/symbol` with query "add" and verify rust-analyzer finds
 /// the `add` function.
 #[tokio::test]
-#[ignore]
+#[ignore = "requires rust-analyzer installed and takes 10-30s for indexing"]
 async fn real_lsp_workspace_symbols() {
 	let root = setup_fixture("symbols");
 	let daemon_task = spawn_daemon(&root);
@@ -653,8 +647,7 @@ async fn real_lsp_workspace_symbols() {
 
 	assert_eq!(
 		sym_response.message_type, TYPE_CALL_OK,
-		"workspace/symbol call should succeed: {:?}",
-		sym_response
+		"workspace/symbol call should succeed: {sym_response:?}"
 	);
 
 	let result = &sym_response.payload["response"]["result"];
@@ -676,6 +669,7 @@ async fn real_lsp_workspace_symbols() {
 
 	do_release(&mut writer, &mut lines, &lease_id).await;
 	shutdown_daemon(&mut writer, &mut lines).await;
+
 	let _ = daemon_task.await;
 	let _ = fs::remove_dir_all(root);
 }

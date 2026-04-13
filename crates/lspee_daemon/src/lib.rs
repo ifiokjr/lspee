@@ -57,6 +57,7 @@ impl Daemon {
 	#[must_use]
 	pub fn new(root: PathBuf, config: lspee_config::ResolvedConfig) -> Self {
 		let idle_ttl = std::time::Duration::from_secs(config.merged.session.idle_ttl_secs);
+
 		Self {
 			root,
 			config,
@@ -99,6 +100,7 @@ impl Daemon {
 	pub async fn run(&self) -> Result<()> {
 		let configured_lsps: Vec<&str> =
 			self.config.merged.lsps.keys().map(String::as_str).collect();
+
 		tracing::info!(
 			root = ?self.root,
 			configured_lsps = ?configured_lsps,
@@ -113,21 +115,26 @@ impl Daemon {
 			.session
 			.daemon_idle_ttl_secs
 			.map(std::time::Duration::from_secs);
+
 		let eviction_loop =
 			EvictionLoop::start(self.registry.clone(), daemon_idle_ttl, shutdown_tx.clone());
+
 		let memory_monitor =
 			memory::MemoryMonitor::start(self.registry.clone(), self.memory_settings());
 
 		let socket_path = self.control_socket_path();
+
 		if let Some(parent) = socket_path.parent() {
 			tokio::fs::create_dir_all(parent).await?;
 		}
+
 		if tokio::fs::try_exists(&socket_path).await.unwrap_or(false) {
 			let _ = tokio::fs::remove_file(&socket_path).await;
 		}
 
 		let listener = UnixListener::bind(&socket_path)?;
 		tracing::info!(path = %socket_path.display(), "daemon control socket listening");
+
 		let memory_settings = self.memory_settings();
 
 		loop {
@@ -137,6 +144,7 @@ impl Daemon {
 					let registry = self.registry.clone();
 					let uptime_from = self.started_at;
 					let shutdown_tx = shutdown_tx.clone();
+
 					tokio::spawn(async move {
 						if let Err(error) = handle_control_connection(
 							stream,
@@ -167,6 +175,7 @@ impl Daemon {
 		}
 
 		tracing::info!("daemon stopped");
+
 		Ok(())
 	}
 }
@@ -191,6 +200,7 @@ async fn handle_control_connection(
 				None,
 			);
 			write_envelope(&mut writer, &err).await?;
+
 			break;
 		}
 
@@ -199,11 +209,13 @@ async fn handle_control_connection(
 		} else {
 			let err = error_envelope(None, ERROR_BAD_MESSAGE, "Invalid JSON frame", false, None);
 			write_envelope(&mut writer, &err).await?;
+
 			continue;
 		};
 
 		let id = raw.get("id").and_then(Value::as_str).map(ToOwned::to_owned);
 		let version = raw.get("v").and_then(Value::as_u64).map(|v| v as u32);
+
 		if version != Some(PROTOCOL_VERSION) {
 			let err = error_envelope(
 				id,
@@ -213,6 +225,7 @@ async fn handle_control_connection(
 				None,
 			);
 			write_envelope(&mut writer, &err).await?;
+
 			break;
 		}
 
@@ -227,12 +240,14 @@ async fn handle_control_connection(
 				None,
 			);
 			write_envelope(&mut writer, &err).await?;
+
 			continue;
 		};
 
 		let outcome =
 			dispatch_control_request(req, &registry, started_at, memory_settings, &shutdown_tx)
 				.await;
+
 		write_envelope(&mut writer, &outcome.response).await?;
 
 		if outcome.shutdown_requested {
@@ -269,16 +284,18 @@ async fn dispatch_control_request(
 		TYPE_NOTIFY => dispatch_notify(id, payload, registry).await,
 		TYPE_STATS => dispatch_stats(id, registry, started_at, memory_settings).await,
 		TYPE_SHUTDOWN => dispatch_shutdown(id, payload, shutdown_tx).await,
-		_ => DispatchOutcome {
-			response: error_envelope(
-				id,
-				ERROR_UNKNOWN_TYPE,
-				"Unknown control message type",
-				false,
-				None,
-			),
-			shutdown_requested: false,
-		},
+		_ => {
+			DispatchOutcome {
+				response: error_envelope(
+					id,
+					ERROR_UNKNOWN_TYPE,
+					"Unknown control message type",
+					false,
+					None,
+				),
+				shutdown_requested: false,
+			}
+		}
 	}
 }
 
@@ -322,6 +339,7 @@ async fn dispatch_attach(
 		.acquire_or_spawn(key.clone(), client_kind, move |spawn_key| {
 			let spawn_root = session_root.clone();
 			let spawn_lsp_id = lsp_id.clone();
+
 			async move {
 				let resolved =
 					lspee_config::resolve(Some(&spawn_root)).map_err(anyhow::Error::from)?;
@@ -332,6 +350,7 @@ async fn dispatch_attach(
 				let runtime = Arc::new(transport.spawn(&lsp_config).await?);
 				let initialize_result =
 					bootstrap_lsp_session(&runtime, &spawn_root, &lsp_config).await?;
+
 				let (events, _) = tokio::sync::broadcast::channel(32);
 
 				Ok(SessionHandle {
@@ -369,12 +388,15 @@ async fn dispatch_attach(
 					)
 					.await
 					{
-						Ok(endpoint) => StreamInfo {
-							mode: StreamMode::Dedicated,
-							endpoint: Some(format!("unix://{}", endpoint.display())),
-						},
+						Ok(endpoint) => {
+							StreamInfo {
+								mode: StreamMode::Dedicated,
+								endpoint: Some(format!("unix://{}", endpoint.display())),
+							}
+						}
 						Err(error) => {
 							let _ = registry.release_by_lease_id(lease.lease_id()).await;
+
 							return DispatchOutcome {
 								response: error_envelope(
 									id,
@@ -388,10 +410,12 @@ async fn dispatch_attach(
 						}
 					}
 				}
-				StreamMode::MuxControl => StreamInfo {
-					mode: StreamMode::MuxControl,
-					endpoint: None,
-				},
+				StreamMode::MuxControl => {
+					StreamInfo {
+						mode: StreamMode::MuxControl,
+						endpoint: None,
+					}
+				}
 			};
 
 			let body = AttachOk {
@@ -404,15 +428,18 @@ async fn dispatch_attach(
 				}),
 				initialize_result: Some(handle.initialize_result.clone()),
 			};
+
 			ok_envelope(id, TYPE_ATTACH_OK, body)
 		}
-		Err(error) => error_envelope(
-			id,
-			ERROR_SESSION_SPAWN_FAILED,
-			&error.to_string(),
-			true,
-			None,
-		),
+		Err(error) => {
+			error_envelope(
+				id,
+				ERROR_SESSION_SPAWN_FAILED,
+				&error.to_string(),
+				true,
+				None,
+			)
+		}
 	};
 
 	DispatchOutcome {
@@ -444,14 +471,16 @@ async fn dispatch_release(
 	};
 
 	let response = match registry.release_by_lease_id(&payload.lease_id).await {
-		Some(ref_count) => ok_envelope(
-			id,
-			TYPE_RELEASE_OK,
-			ReleaseOk {
-				lease_id: payload.lease_id,
-				ref_count: ref_count as u64,
-			},
-		),
+		Some(ref_count) => {
+			ok_envelope(
+				id,
+				TYPE_RELEASE_OK,
+				ReleaseOk {
+					lease_id: payload.lease_id,
+					ref_count: ref_count as u64,
+				},
+			)
+		}
 		None => error_envelope(id, ERROR_LEASE_NOT_FOUND, "Lease not found", false, None),
 	};
 
@@ -498,6 +527,7 @@ async fn dispatch_call(
 			} else {
 				(ERROR_INTERNAL, true)
 			};
+
 			error_envelope(id, code, &message, retryable, None)
 		}
 	};
@@ -546,6 +576,7 @@ async fn dispatch_notify(
 			} else {
 				(ERROR_INTERNAL, true)
 			};
+
 			error_envelope(id, code, &message, retryable, None)
 		}
 	};
@@ -565,6 +596,7 @@ async fn dispatch_stats(
 ) -> DispatchOutcome {
 	let snapshot = registry.snapshot().await;
 	let memory_total_bytes = memory::total_memory_bytes(registry).await;
+
 	let body = StatsOk {
 		sessions: snapshot.sessions.len() as u64,
 		leases: snapshot.lease_count as u64,
@@ -613,6 +645,7 @@ async fn dispatch_shutdown(
 	};
 
 	let _ = shutdown_tx.send(true);
+
 	DispatchOutcome {
 		response: ok_envelope(id, TYPE_SHUTDOWN_OK, ShutdownOk { accepted: true }),
 		shutdown_requested: true,
@@ -644,6 +677,7 @@ fn resolve_lsp_config(
 	let user_config = std::env::var_os("HOME")
 		.map(PathBuf::from)
 		.map(|home| home.join(".config/lspee/config.toml"));
+
 	let project_config = project_root.join("lspee.toml");
 
 	let catalog = lspee_config::languages::lsp_for_id(
@@ -656,17 +690,20 @@ fn resolve_lsp_config(
 	// Check if project config has an explicit entry for this LSP.
 	if let Some(project_lsp) = resolved.merged.lsp_config(requested_lsp_id) {
 		let mut config = project_lsp.clone();
+
 		// Fill in gaps from catalog.
 		if config.command.trim().is_empty() {
 			if let Some(ref catalog) = catalog {
 				config.command.clone_from(&catalog.command);
 			}
 		}
+
 		if config.args.is_empty() {
 			if let Some(ref catalog) = catalog {
 				config.args.clone_from(&catalog.args);
 			}
 		}
+
 		if !config.command.trim().is_empty() {
 			return Ok(config);
 		}
@@ -735,6 +772,7 @@ async fn shutdown_all_sessions(registry: &SessionRegistry) {
 	for handle in handles {
 		if let Err(error) = handle.runtime.shutdown().await {
 			tracing::warn!(key = ?handle.key, ?error, "failed graceful session shutdown during daemon stop");
+
 			if let Err(force_error) = handle.runtime.force_stop().await {
 				tracing::error!(key = ?handle.key, ?force_error, "failed force-stop during daemon stop");
 			}
@@ -746,12 +784,15 @@ async fn shutdown_all_sessions(registry: &SessionRegistry) {
 
 fn validate_session_key(key: &SessionKeyWire) -> std::result::Result<(), String> {
 	let project_root = Path::new(&key.project_root);
+
 	if key.project_root.is_empty() || !project_root.is_absolute() {
 		return Err("session_key.project_root must be an absolute non-empty path".to_string());
 	}
+
 	if key.config_hash.trim().is_empty() {
 		return Err("session_key.config_hash must be non-empty".to_string());
 	}
+
 	if key.lsp_id.is_empty()
 		|| !key
 			.lsp_id
@@ -760,6 +801,7 @@ fn validate_session_key(key: &SessionKeyWire) -> std::result::Result<(), String>
 	{
 		return Err("session_key.lsp_id must match ^[a-z0-9._-]+$".to_string());
 	}
+
 	Ok(())
 }
 
@@ -768,11 +810,18 @@ fn ok_envelope<T: serde::Serialize>(
 	message_type: &str,
 	payload: T,
 ) -> ControlEnvelope<Value> {
+	// Serialization of internally-controlled types should never fail.
+	// Use a fallback value if it does to avoid panicking.
+	let payload = serde_json::to_value(payload).unwrap_or_else(|err| {
+		tracing::error!(error = %err, "failed to serialize ok payload");
+		Value::Null
+	});
+
 	ControlEnvelope {
 		v: PROTOCOL_VERSION,
 		id,
 		message_type: message_type.to_string(),
-		payload: serde_json::to_value(payload).expect("control payload must be serializable"),
+		payload,
 	}
 }
 
@@ -783,17 +832,29 @@ fn error_envelope(
 	retryable: bool,
 	details: Option<Value>,
 ) -> ControlEnvelope<Value> {
+	// Serialization of ErrorResponse should never fail.
+	// Use a minimal fallback if it does.
+	let payload = serde_json::to_value(ErrorResponse {
+		code: code.to_string(),
+		message: message.to_string(),
+		retryable,
+		details,
+	})
+	.unwrap_or_else(|err| {
+		tracing::error!(error = %err, "failed to serialize error payload");
+
+		json!({
+			"code": "E_SERIALIZATION_ERROR",
+			"message": "failed to serialize error response",
+			"retryable": true
+		})
+	});
+
 	ControlEnvelope {
 		v: PROTOCOL_VERSION,
 		id,
 		message_type: TYPE_ERROR.to_string(),
-		payload: serde_json::to_value(ErrorResponse {
-			code: code.to_string(),
-			message: message.to_string(),
-			retryable,
-			details,
-		})
-		.expect("error payload must be serializable"),
+		payload,
 	}
 }
 
@@ -803,8 +864,10 @@ async fn write_envelope(
 ) -> Result<()> {
 	let mut bytes = serde_json::to_vec(envelope)?;
 	bytes.push(b'\n');
+
 	writer.write_all(&bytes).await?;
 	writer.flush().await?;
+
 	Ok(())
 }
 
@@ -816,6 +879,7 @@ mod tests {
 	#[test]
 	fn validate_session_key_accepts_absolute_paths() {
 		let cwd = std::env::current_dir().expect("cwd should resolve");
+
 		let key = SessionKeyWire {
 			project_root: cwd.display().to_string(),
 			config_hash: "abc123".to_string(),
@@ -828,6 +892,7 @@ mod tests {
 	#[test]
 	fn validate_session_key_rejects_invalid_lsp_id() {
 		let cwd = std::env::current_dir().expect("cwd should resolve");
+
 		let key = SessionKeyWire {
 			project_root: cwd.display().to_string(),
 			config_hash: "abc123".to_string(),

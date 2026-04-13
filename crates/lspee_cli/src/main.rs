@@ -15,5 +15,6 @@ struct Cli {
 
 fn main() -> anyhow::Result<()> {
 	let cli = Cli::parse();
+
 	commands::run(cli.command)
 }

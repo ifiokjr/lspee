@@ -71,6 +71,7 @@ impl MemoryMonitor {
 		if let Some(stop) = self.stop.take() {
 			let _ = stop.send(());
 		}
+
 		let _ = self.task.await;
 	}
 }
@@ -106,6 +107,7 @@ async fn collect_samples(registry: &SessionRegistry) -> Vec<MemorySample> {
 			.await
 			.unwrap_or(None)
 			.unwrap_or(0);
+
 		samples.push(memory_sample_from_snapshot(snapshot, rss_bytes));
 	}
 
@@ -134,6 +136,7 @@ fn select_evictions(samples: &[MemorySample], settings: MemoryBudgetSettings) ->
 			.filter(|sample| sample.rss_bytes > max_session_bytes)
 			.cloned()
 			.collect();
+
 		sort_candidates(&mut over_limit);
 
 		for sample in over_limit {
@@ -144,12 +147,15 @@ fn select_evictions(samples: &[MemorySample], settings: MemoryBudgetSettings) ->
 
 	if let Some(max_total_bytes) = settings.max_total_bytes {
 		let mut total_bytes: u64 = remaining.iter().map(|sample| sample.rss_bytes).sum();
+
 		if total_bytes > max_total_bytes {
 			sort_candidates(&mut remaining);
+
 			for sample in remaining.clone() {
 				if total_bytes <= max_total_bytes {
 					break;
 				}
+
 				total_bytes = total_bytes.saturating_sub(sample.rss_bytes);
 				selected.push(sample.clone());
 				remaining.retain(|candidate| candidate.key != sample.key);
@@ -215,12 +221,22 @@ async fn evict_session(
 	registry
 		.mark_terminating_with_notice(&sample.key, Some(notice.clone()))
 		.await;
+
 	let _ = sample.handle.events.send(notice);
 
 	if let Err(error) = sample.handle.runtime.shutdown().await {
-		tracing::warn!(key = ?sample.key, ?error, "failed graceful memory-budget shutdown; forcing stop");
+		tracing::warn!(
+			key = ?sample.key,
+			?error,
+			"failed graceful memory-budget shutdown; forcing stop"
+		);
+
 		if let Err(force_error) = sample.handle.runtime.force_stop().await {
-			tracing::error!(key = ?sample.key, ?force_error, "failed force-stop after memory eviction");
+			tracing::error!(
+				key = ?sample.key,
+				?force_error,
+				"failed force-stop after memory eviction"
+			);
 		}
 	}
 
@@ -310,6 +326,7 @@ mod tests {
 
 		assert_eq!(selected.len(), 1);
 		assert_eq!(selected[0].key.lsp_id, "b");
+
 		cleanup_samples(&samples).await;
 	}
 
@@ -331,6 +348,7 @@ mod tests {
 
 		assert_eq!(selected.len(), 1);
 		assert_eq!(selected[0].key.lsp_id, "agent");
+
 		cleanup_samples(&samples).await;
 	}
 
@@ -354,6 +372,7 @@ mod tests {
 		assert_eq!(selected.len(), 2);
 		assert_eq!(selected[0].key.lsp_id, "old");
 		assert_eq!(selected[1].key.lsp_id, "new");
+
 		cleanup_samples(&samples).await;
 	}
 }

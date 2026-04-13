@@ -56,10 +56,12 @@ pub fn lsp_for_id(
 ) -> Result<Option<LspSelection>, ConfigError> {
 	let registry = load_registry(user_config, project_config)?;
 
-	Ok(registry
+	let selection = registry
 		.lsp
 		.get(lsp_id)
-		.map(|definition| selection_from_definition(lsp_id.to_string(), definition.clone())))
+		.map(|definition| selection_from_definition(lsp_id.to_string(), definition.clone()));
+
+	Ok(selection)
 }
 
 /// Find all LSP servers whose registered file extensions match the given path.
@@ -108,9 +110,11 @@ fn load_registry(
 	project_config: Option<&Path>,
 ) -> Result<LanguageRegistryFile, ConfigError> {
 	let mut registry: LanguageRegistryFile =
-		toml::from_str(DEFAULT_LANGUAGES_TOML).map_err(|source| ConfigError::Parse {
-			path: Path::new("crates/lspee_config/defaults/languages.toml").to_path_buf(),
-			source,
+		toml::from_str(DEFAULT_LANGUAGES_TOML).map_err(|source| {
+			ConfigError::Parse {
+				path: Path::new("crates/lspee_config/defaults/languages.toml").to_path_buf(),
+				source,
+			}
 		})?;
 
 	apply_overrides(&mut registry, user_config)?;
@@ -141,14 +145,18 @@ fn apply_overrides(
 		return Ok(());
 	}
 
-	let raw = std::fs::read_to_string(path).map_err(|source| ConfigError::Read {
-		path: path.to_path_buf(),
-		source,
+	let raw = std::fs::read_to_string(path).map_err(|source| {
+		ConfigError::Read {
+			path: path.to_path_buf(),
+			source,
+		}
 	})?;
 
-	let parsed: PartialConfig = toml::from_str(&raw).map_err(|source| ConfigError::Parse {
-		path: path.to_path_buf(),
-		source,
+	let parsed: PartialConfig = toml::from_str(&raw).map_err(|source| {
+		ConfigError::Parse {
+			path: path.to_path_buf(),
+			source,
+		}
 	})?;
 
 	for partial_lsp in parsed.lsp {
@@ -166,11 +174,13 @@ fn apply_overrides(
 		if let Some(init_options) = partial_lsp.initialization_options {
 			let mut extension_set: BTreeSet<String> =
 				entry.file_extensions.iter().cloned().collect();
+
 			for key in init_options.keys() {
 				if let Some(ext) = key.strip_prefix("language_extension_") {
 					extension_set.insert(ext.to_string());
 				}
 			}
+
 			entry.file_extensions = extension_set.into_iter().collect();
 		}
 	}
@@ -183,24 +193,28 @@ fn has_executable(executable: &str) -> bool {
 		return false;
 	}
 
-	std::env::var_os("PATH").is_some_and(|paths| {
-		std::env::split_paths(&paths).any(|dir| {
-			let candidate = dir.join(executable);
-			if candidate.is_file() {
-				return true;
-			}
+	let paths = std::env::var_os("PATH");
+	let Some(paths) = paths else {
+		return false;
+	};
 
-			#[cfg(windows)]
-			{
-				let candidate_exe = dir.join(format!("{executable}.exe"));
-				candidate_exe.is_file()
-			}
+	std::env::split_paths(&paths).any(|dir| {
+		let candidate = dir.join(executable);
 
-			#[cfg(not(windows))]
-			{
-				false
-			}
-		})
+		if candidate.is_file() {
+			return true;
+		}
+
+		#[cfg(windows)]
+		{
+			let candidate_exe = dir.join(format!("{executable}.exe"));
+			candidate_exe.is_file()
+		}
+
+		#[cfg(not(windows))]
+		{
+			false
+		}
 	})
 }
 
@@ -222,6 +236,7 @@ mod tests {
 			.duration_since(UNIX_EPOCH)
 			.expect("time should be monotonic")
 			.as_nanos();
+
 		std::env::temp_dir().join(format!("lspee-{name}-{nanos}.toml"))
 	}
 

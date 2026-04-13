@@ -154,6 +154,7 @@ impl LspeeMcpServer {
 fn run_lsps(file: &str) -> anyhow::Result<String> {
 	let file_path = Path::new(file);
 
+	// Resolve config paths
 	let user_cfg = std::env::var_os("HOME")
 		.map(PathBuf::from)
 		.map(|home| home.join(".config/lspee/config.toml"));
@@ -163,6 +164,7 @@ fn run_lsps(file: &str) -> anyhow::Result<String> {
 		.map(|parent| parent.join("lspee.toml"))
 		.filter(|path| path.exists());
 
+	// Find matching LSPs
 	let matches = lspee_config::languages::lsps_for_file(
 		file_path,
 		user_cfg.as_deref(),
@@ -179,11 +181,13 @@ fn run_lsps(file: &str) -> anyhow::Result<String> {
 
 fn run_config_show(root: Option<&Path>) -> anyhow::Result<String> {
 	let resolved = lspee_config::resolve(root)?;
+
 	let payload = serde_json::json!({
 		"project_root": resolved.project_root,
 		"config_hash": resolved.config_hash,
 		"config": resolved.merged,
 	});
+
 	Ok(serde_json::to_string_pretty(&payload)?)
 }
 

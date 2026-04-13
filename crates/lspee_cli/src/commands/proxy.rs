@@ -41,6 +41,7 @@ pub struct ProxyCommand {
 
 pub fn run(cmd: ProxyCommand) -> anyhow::Result<()> {
 	let runtime = tokio::runtime::Runtime::new()?;
+
 	runtime.block_on(run_async(cmd))
 }
 
@@ -185,38 +186,45 @@ async fn handle_editor_message(
 		(Some("initialize"), Some(id)) => {
 			let response = initialize_response_for_editor(id, initialize_result);
 			write_lsp_message(stdout, &response).await?;
-			Ok(false)
+
+			return Ok(false);
 		}
 		(Some("shutdown"), Some(id)) => {
 			let response = shutdown_response_for_editor(id);
 			write_lsp_message(stdout, &response).await?;
-			Ok(false)
-		}
-		(Some("initialized"), None) => Ok(false),
-		(Some("exit"), None) => Ok(true),
-		_ => {
-			let frame = StreamFrame {
-				v: lspee_daemon::PROTOCOL_VERSION,
-				frame_type: StreamFrameType::LspIn,
-				lease_id: lease_id.to_string(),
-				seq: *seq,
-				payload: message.clone(),
-			};
-			*seq = seq.saturating_add(1);
 
-			let mut encoded = serde_json::to_vec(&frame)?;
-			encoded.push(b'\n');
-			stream_writer.write_all(&encoded).await?;
-			stream_writer.flush().await?;
-			Ok(false)
+			return Ok(false);
 		}
+		(Some("initialized"), None) => return Ok(false),
+		(Some("exit"), None) => return Ok(true),
+		_ => {}
 	}
+
+	let frame = StreamFrame {
+		v: lspee_daemon::PROTOCOL_VERSION,
+		frame_type: StreamFrameType::LspIn,
+		lease_id: lease_id.to_string(),
+		seq: *seq,
+		payload: message.clone(),
+	};
+
+	*seq = seq.saturating_add(1);
+
+	let mut encoded = serde_json::to_vec(&frame)?;
+	encoded.push(b'\n');
+
+	stream_writer.write_all(&encoded).await?;
+	stream_writer.flush().await?;
+
+	Ok(false)
 }
 
 async fn write_lsp_message(stdout: &mut tokio::io::Stdout, message: &Value) -> anyhow::Result<()> {
 	let frame = lspee_lsp::encode_lsp_frame(message)?;
+
 	stdout.write_all(&frame).await?;
 	stdout.flush().await?;
+
 	Ok(())
 }
 

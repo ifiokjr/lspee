@@ -28,7 +28,7 @@ RUST_LOG = "error"
 
 ```toml
 [session]
-daemon_idle_ttl_secs = 1800  # default: 30 minutes; set 0 to disable
+daemon_idle_ttl_secs = 1800 # default: 30 minutes; set 0 to disable
 ```
 
 ### Memory configuration

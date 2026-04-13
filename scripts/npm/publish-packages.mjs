@@ -7,7 +7,7 @@
  */
 
 import { execSync } from "node:child_process";
-import { readdirSync, existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 
@@ -35,7 +35,10 @@ function publish(dir) {
 	try {
 		execSync(`npm ${args.join(" ")}`, { cwd: dir, stdio: "inherit" });
 	} catch (error) {
-		if (error.message?.includes("EPUBLISHCONFLICT") || error.message?.includes("already exists")) {
+		if (
+			error.message?.includes("EPUBLISHCONFLICT") ||
+			error.message?.includes("already exists")
+		) {
 			console.log(`Already published, skipping: ${dir}`);
 		} else {
 			throw error;

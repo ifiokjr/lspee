@@ -272,6 +272,7 @@ async fn shutdown_daemon(root: &Path) {
 		};
 		let mut bytes = serde_json::to_vec(&envelope).unwrap();
 		bytes.push(b'\n');
+
 		let _ = writer.write_all(&bytes).await;
 		let _ = writer.flush().await;
 		let _ = lines.next_line().await;
@@ -281,17 +282,20 @@ async fn shutdown_daemon(root: &Path) {
 fn spawn_daemon(root: &Path) -> tokio::task::JoinHandle<anyhow::Result<()>> {
 	let resolved = lspee_config::resolve(Some(root)).expect("config should resolve");
 	let daemon = lspee_daemon::Daemon::new(root.to_path_buf(), resolved);
+
 	tokio::spawn(async move { daemon.run().await })
 }
 
 async fn wait_for_socket(root: &Path) {
 	let socket = root.join(".lspee").join("daemon.sock");
+
 	for _ in 0..100 {
 		if tokio::net::UnixStream::connect(&socket).await.is_ok() {
 			return;
 		}
 		tokio::time::sleep(std::time::Duration::from_millis(25)).await;
 	}
+
 	panic!("daemon socket did not become available");
 }
 
@@ -318,10 +322,12 @@ async fn daemon_rejects_invalid_json() {
 	let line = lines.next_line().await.unwrap().unwrap();
 	let response: lspee_daemon::ControlEnvelope<serde_json::Value> =
 		serde_json::from_str(&line).unwrap();
+
 	assert_eq!(response.message_type, TYPE_ERROR);
 	assert_eq!(response.payload["code"], "E_BAD_MESSAGE");
 
 	shutdown_daemon(&root).await;
+
 	let _ = daemon_task.await;
 }
 
@@ -345,16 +351,19 @@ async fn daemon_rejects_wrong_protocol_version() {
 	let bad = serde_json::json!({"v": 999, "id": "bad", "type": "Stats", "payload": {}});
 	let mut bytes = serde_json::to_vec(&bad).unwrap();
 	bytes.push(b'\n');
+
 	writer.write_all(&bytes).await.unwrap();
 	writer.flush().await.unwrap();
 
 	let line = lines.next_line().await.unwrap().unwrap();
 	let response: lspee_daemon::ControlEnvelope<serde_json::Value> =
 		serde_json::from_str(&line).unwrap();
+
 	assert_eq!(response.message_type, TYPE_ERROR);
 	assert_eq!(response.payload["code"], "E_UNSUPPORTED_VERSION");
 
 	shutdown_daemon(&root).await;
+
 	let _ = daemon_task.await;
 }
 
@@ -379,16 +388,19 @@ async fn daemon_rejects_unknown_message_type() {
 	let bad = serde_json::json!({"v": PROTOCOL_VERSION, "id": "x", "type": "Bogus", "payload": {}});
 	let mut bytes = serde_json::to_vec(&bad).unwrap();
 	bytes.push(b'\n');
+
 	writer.write_all(&bytes).await.unwrap();
 	writer.flush().await.unwrap();
 
 	let line = lines.next_line().await.unwrap().unwrap();
 	let response: lspee_daemon::ControlEnvelope<serde_json::Value> =
 		serde_json::from_str(&line).unwrap();
+
 	assert_eq!(response.message_type, TYPE_ERROR);
 	assert_eq!(response.payload["code"], "E_UNKNOWN_TYPE");
 
 	shutdown_daemon(&root).await;
+
 	let _ = daemon_task.await;
 }
 
@@ -443,15 +455,18 @@ async fn daemon_rejects_invalid_session_key() {
 	};
 	let mut bytes = serde_json::to_vec(&attach).unwrap();
 	bytes.push(b'\n');
+
 	writer.write_all(&bytes).await.unwrap();
 	writer.flush().await.unwrap();
 
 	let line = lines.next_line().await.unwrap().unwrap();
 	let response: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
+
 	assert_eq!(response.message_type, TYPE_ERROR);
 	assert_eq!(response.payload["code"], "E_INVALID_SESSION_KEY");
 
 	shutdown_daemon(&root).await;
+
 	let _ = daemon_task.await;
 }
 
@@ -488,15 +503,18 @@ async fn release_nonexistent_lease_returns_error() {
 	};
 	let mut bytes = serde_json::to_vec(&release).unwrap();
 	bytes.push(b'\n');
+
 	writer.write_all(&bytes).await.unwrap();
 	writer.flush().await.unwrap();
 
 	let line = lines.next_line().await.unwrap().unwrap();
 	let response: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
+
 	assert_eq!(response.message_type, TYPE_ERROR);
 	assert_eq!(response.payload["code"], "E_LEASE_NOT_FOUND");
 
 	shutdown_daemon(&root).await;
+
 	let _ = daemon_task.await;
 }
 
@@ -520,6 +538,7 @@ fn client_daemon_socket_path() {
 fn client_render_error_payload() {
 	let payload = serde_json::json!({"code": "E_TEST", "message": "test error"});
 	let rendered = lspee_cli::commands::client::render_error_payload(&payload);
+
 	assert!(rendered.contains("E_TEST"));
 	assert!(rendered.contains("test error"));
 }
@@ -528,6 +547,7 @@ fn client_render_error_payload() {
 fn client_render_error_payload_missing_fields() {
 	let payload = serde_json::json!({});
 	let rendered = lspee_cli::commands::client::render_error_payload(&payload);
+
 	assert!(rendered.contains("E_UNKNOWN"));
 }
 
@@ -539,6 +559,7 @@ fn client_ensure_not_error_passes_for_non_error() {
 		message_type: "AttachOk".to_string(),
 		payload: serde_json::json!({}),
 	};
+
 	assert!(lspee_cli::commands::client::ensure_not_error(&envelope).is_ok());
 }
 
@@ -550,6 +571,7 @@ fn client_ensure_not_error_fails_for_error() {
 		message_type: "Error".to_string(),
 		payload: serde_json::json!({"code": "E_TEST", "message": "fail"}),
 	};
+
 	assert!(lspee_cli::commands::client::ensure_not_error(&envelope).is_err());
 }
 
@@ -814,15 +836,18 @@ async fn daemon_attach_bad_payload() {
 	};
 	let mut bytes = serde_json::to_vec(&envelope).unwrap();
 	bytes.push(b'\n');
+
 	writer.write_all(&bytes).await.unwrap();
 	writer.flush().await.unwrap();
 
 	let line = lines.next_line().await.unwrap().unwrap();
 	let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
+
 	assert_eq!(resp.message_type, TYPE_ERROR);
 	assert_eq!(resp.payload["code"], "E_BAD_MESSAGE");
 
 	shutdown_daemon(&root).await;
+
 	let _ = daemon_task.await;
 }
 
@@ -854,14 +879,17 @@ async fn daemon_call_bad_payload() {
 	};
 	let mut bytes = serde_json::to_vec(&envelope).unwrap();
 	bytes.push(b'\n');
+
 	writer.write_all(&bytes).await.unwrap();
 	writer.flush().await.unwrap();
 
 	let line = lines.next_line().await.unwrap().unwrap();
 	let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
+
 	assert_eq!(resp.message_type, TYPE_ERROR);
 
 	shutdown_daemon(&root).await;
+
 	let _ = daemon_task.await;
 }
 
@@ -893,14 +921,17 @@ async fn daemon_release_bad_payload() {
 	};
 	let mut bytes = serde_json::to_vec(&envelope).unwrap();
 	bytes.push(b'\n');
+
 	writer.write_all(&bytes).await.unwrap();
 	writer.flush().await.unwrap();
 
 	let line = lines.next_line().await.unwrap().unwrap();
 	let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
+
 	assert_eq!(resp.message_type, TYPE_ERROR);
 
 	shutdown_daemon(&root).await;
+
 	let _ = daemon_task.await;
 }
 
@@ -932,14 +963,17 @@ async fn daemon_shutdown_bad_payload() {
 	};
 	let mut bytes = serde_json::to_vec(&envelope).unwrap();
 	bytes.push(b'\n');
+
 	writer.write_all(&bytes).await.unwrap();
 	writer.flush().await.unwrap();
 
 	let line = lines.next_line().await.unwrap().unwrap();
 	let resp: ControlEnvelope<serde_json::Value> = serde_json::from_str(&line).unwrap();
+
 	assert_eq!(resp.message_type, TYPE_ERROR);
 
 	shutdown_daemon(&root).await;
+
 	let _ = daemon_task.await;
 }
 

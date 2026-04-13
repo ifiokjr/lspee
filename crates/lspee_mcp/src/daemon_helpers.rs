@@ -62,8 +62,10 @@ pub(crate) async fn query_capabilities(lsp_id: &str, root: Option<&Path>) -> Res
 	let attach_id = new_request_id("mcp-attach");
 	let attach = build_attach_envelope(&attach_id, &resolved, lsp_id);
 	write_frame(&mut writer, &attach).await?;
+
 	let attach_resp = read_response_for_id(&mut lines, &attach_id).await?;
 	ensure_not_error(&attach_resp)?;
+
 	if attach_resp.message_type != TYPE_ATTACH_OK {
 		anyhow::bail!(
 			"unexpected response type for Attach: {}",
@@ -101,8 +103,10 @@ pub(crate) async fn raw_call(
 	let attach_id = new_request_id("mcp-attach");
 	let attach = build_attach_envelope(&attach_id, &resolved, lsp_id);
 	write_frame(&mut writer, &attach).await?;
+
 	let attach_resp = read_response_for_id(&mut lines, &attach_id).await?;
 	ensure_not_error(&attach_resp)?;
+
 	if attach_resp.message_type != TYPE_ATTACH_OK {
 		anyhow::bail!(
 			"unexpected response type for Attach: {}",
@@ -128,13 +132,16 @@ pub(crate) async fn raw_call(
 			request: request_payload,
 		})?,
 	};
+
 	write_frame(&mut writer, &call).await?;
+
 	let call_resp = read_response_for_id(&mut lines, &call_id).await?;
 
 	// Release regardless of call outcome
 	let _ = release_lease(&mut writer, &mut lines, &lease_id).await;
 
 	ensure_not_error(&call_resp)?;
+
 	if call_resp.message_type != TYPE_CALL_OK {
 		anyhow::bail!(
 			"unexpected response type for Call: {}",
@@ -164,6 +171,7 @@ pub(crate) async fn query_status(root: Option<&Path>) -> Result<String> {
 	};
 
 	write_frame(&mut writer, &request).await?;
+
 	let response = read_response_for_id(&mut lines, &req_id).await?;
 	ensure_not_error(&response)?;
 
@@ -197,6 +205,7 @@ fn daemon_socket_path(project_root: &Path) -> PathBuf {
 async fn connect(project_root: &Path, auto_start: bool) -> Result<UnixStream> {
 	let socket_path = daemon_socket_path(project_root);
 
+	// Try initial connection
 	match UnixStream::connect(&socket_path).await {
 		Ok(stream) => return Ok(stream),
 		Err(error) if !auto_start => {
@@ -219,6 +228,7 @@ async fn connect(project_root: &Path, auto_start: bool) -> Result<UnixStream> {
 		Err(_) => {}
 	}
 
+	// Auto-start daemon and retry
 	spawn_daemon(project_root)?;
 
 	for _ in 0..DAEMON_CONNECT_ATTEMPTS {
@@ -240,6 +250,7 @@ fn spawn_daemon(project_root: &Path) -> Result<()> {
 	let _ = std::fs::create_dir_all(&log_dir);
 	let log_file = log_dir.join("daemon.log");
 
+	// Build daemon command
 	let mut cmd = process::Command::new(current_exe);
 	cmd.arg("serve")
 		.arg("--project-root")
@@ -253,6 +264,7 @@ fn spawn_daemon(project_root: &Path) -> Result<()> {
 	if let Ok(log_filter) = std::env::var("LSPEE_LOG") {
 		cmd.env("LSPEE_LOG", log_filter);
 	}
+
 	if let Ok(log_format) = std::env::var("LSPEE_LOG_FORMAT") {
 		cmd.env("LSPEE_LOG_FORMAT", log_format);
 	}
@@ -261,6 +273,7 @@ fn spawn_daemon(project_root: &Path) -> Result<()> {
 		.context("failed to spawn background daemon process")?;
 
 	tracing::debug!(log_file = %log_file.display(), "auto-started daemon (from MCP server)");
+
 	Ok(())
 }
 
@@ -269,6 +282,7 @@ fn new_request_id(prefix: &str) -> String {
 		.duration_since(UNIX_EPOCH)
 		.map(|d| d.as_nanos())
 		.unwrap_or_default();
+
 	format!("{prefix}-{nanos}")
 }
 
@@ -277,7 +291,7 @@ fn build_attach_envelope(
 	resolved: &lspee_config::ResolvedConfig,
 	lsp_id: &str,
 ) -> ControlEnvelope<Value> {
-	let payload = serde_json::to_value(Attach {
+	let attach = Attach {
 		session_key: SessionKeyWire {
 			project_root: resolved.project_root.display().to_string(),
 			config_hash: resolved.config_hash.clone(),
@@ -295,8 +309,9 @@ fn build_attach_envelope(
 		capabilities: Some(AttachCapabilities {
 			stream_mode: vec![StreamMode::MuxControl],
 		}),
-	})
-	.expect("Attach payload must serialize");
+	};
+
+	let payload = serde_json::to_value(attach).expect("Attach payload must serialize");
 
 	ControlEnvelope {
 		v: lspee_daemon::PROTOCOL_VERSION,
@@ -312,8 +327,10 @@ async fn write_frame(
 ) -> Result<()> {
 	let mut bytes = serde_json::to_vec(envelope)?;
 	bytes.push(b'\n');
+
 	writer.write_all(&bytes).await?;
 	writer.flush().await?;
+
 	Ok(())
 }
 
@@ -324,6 +341,7 @@ async fn read_response_for_id(
 	while let Some(line) = lines.next_line().await? {
 		let response: ControlEnvelope<Value> = serde_json::from_str(&line)
 			.map_err(|e| anyhow!("invalid daemon response JSON: {e}"))?;
+
 		if response.id.as_deref() == Some(expected_id) {
 			return Ok(response);
 		}
@@ -335,20 +353,22 @@ async fn read_response_for_id(
 }
 
 fn ensure_not_error(response: &ControlEnvelope<Value>) -> Result<()> {
-	if response.message_type == TYPE_ERROR {
-		let code = response
-			.payload
-			.get("code")
-			.and_then(Value::as_str)
-			.unwrap_or("E_UNKNOWN");
-		let message = response
-			.payload
-			.get("message")
-			.and_then(Value::as_str)
-			.unwrap_or("Unknown daemon error");
-		return Err(anyhow!("daemon error {code}: {message}"));
+	if response.message_type != TYPE_ERROR {
+		return Ok(());
 	}
-	Ok(())
+
+	let code = response
+		.payload
+		.get("code")
+		.and_then(Value::as_str)
+		.unwrap_or("E_UNKNOWN");
+	let message = response
+		.payload
+		.get("message")
+		.and_then(Value::as_str)
+		.unwrap_or("Unknown daemon error");
+
+	Err(anyhow!("daemon error {code}: {message}"))
 }
 
 async fn release_lease(
@@ -368,8 +388,10 @@ async fn release_lease(
 	};
 
 	write_frame(writer, &release).await?;
+
 	let release_resp = read_response_for_id(lines, &release_id).await?;
 	ensure_not_error(&release_resp)?;
+
 	if release_resp.message_type != TYPE_RELEASE_OK {
 		anyhow::bail!(
 			"unexpected response type for Release: {}",

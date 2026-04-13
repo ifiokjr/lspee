@@ -13,7 +13,7 @@ use tokio::sync::Mutex;
 use tokio::sync::mpsc;
 
 use crate::SessionHandle;
-use crate::SessionRegistry;
+use crate::registry::SessionRegistry;
 
 #[tracing::instrument(skip(handle, registry))]
 pub(crate) async fn spawn_dedicated_stream_endpoint(
@@ -23,11 +23,13 @@ pub(crate) async fn spawn_dedicated_stream_endpoint(
 	registry: SessionRegistry,
 ) -> Result<PathBuf> {
 	let stream_dir = project_root.join(".lspee").join("streams");
+
 	tokio::fs::create_dir_all(&stream_dir)
 		.await
 		.context("failed to create stream socket directory")?;
 
 	let endpoint = stream_dir.join(format!("{lease_id}.sock"));
+
 	if tokio::fs::try_exists(&endpoint).await.unwrap_or(false) {
 		let _ = tokio::fs::remove_file(&endpoint).await;
 	}
@@ -38,12 +40,14 @@ pub(crate) async fn spawn_dedicated_stream_endpoint(
 			endpoint.display()
 		)
 	})?;
+
 	let endpoint_for_task = endpoint.clone();
 	let lease_id = lease_id.to_string();
 
 	tokio::spawn(async move {
 		let result = async {
 			let (stream, _) = listener.accept().await?;
+
 			run_stream_connection(stream, lease_id.clone(), handle, registry.clone()).await
 		}
 		.await;
@@ -70,13 +74,16 @@ async fn run_stream_connection(
 
 	let writer_task = {
 		let writer = Arc::clone(&writer);
+
 		tokio::spawn(async move {
 			while let Some(frame) = outbound_rx.recv().await {
 				let mut writer = writer.lock().await;
+
 				writer.write_all(&frame).await?;
 				writer.write_all(b"\n").await?;
 				writer.flush().await?;
 			}
+
 			Ok::<(), anyhow::Error>(())
 		})
 	};
@@ -85,8 +92,10 @@ async fn run_stream_connection(
 		let outbound_tx = outbound_tx.clone();
 		let lease_id = lease_id.clone();
 		let mut runtime_rx = handle.runtime.subscribe();
+
 		tokio::spawn(async move {
 			let mut seq = 1_u64;
+
 			loop {
 				match runtime_rx.recv().await {
 					Ok(message) => {
@@ -97,6 +106,7 @@ async fn run_stream_connection(
 							seq,
 							payload: message.payload,
 						};
+
 						seq = seq.saturating_add(1);
 						outbound_tx.send(serde_json::to_vec(&frame)?).await?;
 					}
@@ -104,6 +114,7 @@ async fn run_stream_connection(
 					Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
 				}
 			}
+
 			Ok::<(), anyhow::Error>(())
 		})
 	};
@@ -112,8 +123,10 @@ async fn run_stream_connection(
 		let outbound_tx = outbound_tx.clone();
 		let lease_id = lease_id.clone();
 		let mut event_rx = handle.events.subscribe();
+
 		tokio::spawn(async move {
 			let seq = 1_u64;
+
 			loop {
 				match event_rx.recv().await {
 					Ok(payload) => {
@@ -124,18 +137,22 @@ async fn run_stream_connection(
 							seq,
 							payload,
 						};
+
 						outbound_tx.send(serde_json::to_vec(&frame)?).await?;
+
 						break;
 					}
 					Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {}
 					Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
 				}
 			}
+
 			Ok::<(), anyhow::Error>(())
 		})
 	};
 
 	let mut lines = BufReader::new(reader).lines();
+
 	while let Some(line) = lines.next_line().await? {
 		let frame: crate::protocol::StreamFrame<Value> = serde_json::from_str(&line)
 			.context("failed to decode inbound dedicated stream frame")?;
@@ -156,7 +173,9 @@ async fn run_stream_connection(
 	runtime_task.abort();
 	event_task.abort();
 	drop(outbound_tx);
+
 	let _ = writer_task.await;
 	let _ = registry.release_by_lease_id(&lease_id).await;
+
 	Ok(())
 }

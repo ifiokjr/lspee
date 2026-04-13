@@ -52,6 +52,7 @@ pub struct CapabilitiesCommand {
 
 pub fn run(cmd: CapabilitiesCommand) -> anyhow::Result<()> {
 	let runtime = tokio::runtime::Runtime::new()?;
+
 	runtime.block_on(run_async(cmd))
 }
 
@@ -148,6 +149,12 @@ fn extract_capabilities(lsp_id: &str, initialize_result: Option<&Value>) -> Valu
 		});
 	};
 
+	let server_info = init
+		.get("result")
+		.and_then(|r| r.get("serverInfo"))
+		.or_else(|| init.get("serverInfo"))
+		.cloned();
+
 	let methods = serde_json::json!({
 		"textDocument/completion": has_capability(caps, "completionProvider"),
 		"textDocument/hover": has_capability(caps, "hoverProvider"),
@@ -180,12 +187,6 @@ fn extract_capabilities(lsp_id: &str, initialize_result: Option<&Value>) -> Valu
 		"workspace/symbol": has_capability(caps, "workspaceSymbolProvider"),
 	});
 
-	let server_info = init
-		.get("result")
-		.and_then(|r| r.get("serverInfo"))
-		.or_else(|| init.get("serverInfo"))
-		.cloned();
-
 	serde_json::json!({
 		"lsp_id": lsp_id,
 		"server_info": server_info,
@@ -209,42 +210,50 @@ fn print_human(lsp_id: &str, capabilities: &Value) {
 	if let Some(info) = capabilities.get("server_info") {
 		if let Some(name) = info.get("name").and_then(Value::as_str) {
 			print!("server={name}");
+
 			if let Some(version) = info.get("version").and_then(Value::as_str) {
 				print!(" v{version}");
 			}
+
 			println!();
 		}
 	}
 
 	if let Some(error) = capabilities.get("error").and_then(Value::as_str) {
 		println!("error={error}");
+
 		return;
 	}
 
-	if let Some(methods) = capabilities.get("methods").and_then(Value::as_object) {
-		let mut supported: Vec<&str> = Vec::new();
-		let mut unsupported: Vec<&str> = Vec::new();
+	let Some(methods) = capabilities.get("methods").and_then(Value::as_object) else {
+		return;
+	};
 
-		for (method, available) in methods {
-			if available.as_bool().unwrap_or(false) {
-				supported.push(method);
-			} else {
-				unsupported.push(method);
-			}
+	let mut supported: Vec<&str> = Vec::new();
+	let mut unsupported: Vec<&str> = Vec::new();
+
+	for (method, available) in methods {
+		if available.as_bool().unwrap_or(false) {
+			supported.push(method);
+		} else {
+			unsupported.push(method);
 		}
+	}
 
-		supported.sort_unstable();
-		unsupported.sort_unstable();
+	supported.sort_unstable();
+	unsupported.sort_unstable();
 
-		println!("supported_methods={}", supported.len());
-		for method in &supported {
-			println!("  + {method}");
-		}
-		if !unsupported.is_empty() {
-			println!("unsupported_methods={}", unsupported.len());
-			for method in &unsupported {
-				println!("  - {method}");
-			}
+	println!("supported_methods={}", supported.len());
+
+	for method in &supported {
+		println!("  + {method}");
+	}
+
+	if !unsupported.is_empty() {
+		println!("unsupported_methods={}", unsupported.len());
+
+		for method in &unsupported {
+			println!("  - {method}");
 		}
 	}
 }
@@ -266,8 +275,10 @@ async fn release_lease(
 	};
 
 	client::write_frame(writer, &release).await?;
+
 	let release_response = client::read_response_for_id(lines, &release_id).await?;
 	client::ensure_not_error(&release_response)?;
+
 	if release_response.message_type != TYPE_RELEASE_OK {
 		anyhow::bail!(
 			"unexpected response type for Release: {}",

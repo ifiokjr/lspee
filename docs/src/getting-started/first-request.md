@@ -8,12 +8,12 @@ Create `request.json`:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "workspace/symbol",
-  "params": {
-    "query": "main"
-  }
+	"jsonrpc": "2.0",
+	"id": 1,
+	"method": "workspace/symbol",
+	"params": {
+		"query": "main"
+	}
 }
 ```
 

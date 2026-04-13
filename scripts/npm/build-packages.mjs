@@ -92,7 +92,9 @@ for (const platform of PLATFORMS) {
 
 	const binarySource = join(ARTIFACTS, platform.target, platform.binaryName);
 	if (!existsSync(binarySource)) {
-		console.warn(`Skipping ${platform.packageName}: binary not found at ${binarySource}`);
+		console.warn(
+			`Skipping ${platform.packageName}: binary not found at ${binarySource}`,
+		);
 		continue;
 	}
 
@@ -101,7 +103,9 @@ for (const platform of PLATFORMS) {
 	const pkg = {
 		name: platform.packageName,
 		version: VERSION,
-		description: `Prebuilt lspee binary for ${platform.os} ${platform.cpu}${platform.libc ? ` (${platform.libc})` : ""}`,
+		description: `Prebuilt lspee binary for ${platform.os} ${platform.cpu}${
+			platform.libc ? ` (${platform.libc})` : ""
+		}`,
 		license: "MIT OR Apache-2.0",
 		repository: {
 			type: "git",
@@ -114,7 +118,10 @@ for (const platform of PLATFORMS) {
 		publishConfig: { access: "public", provenance: true },
 	};
 
-	writeFileSync(join(pkgDir, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
+	writeFileSync(
+		join(pkgDir, "package.json"),
+		JSON.stringify(pkg, null, 2) + "\n",
+	);
 	console.log(`Built ${platform.packageName}`);
 }
 
@@ -123,7 +130,10 @@ const rootDir = join(OUT, "@ifi-lspee");
 const rootBinDir = join(rootDir, "bin");
 mkdirSync(rootBinDir, { recursive: true });
 
-cpSync(join(import.meta.dirname, "..", "..", "npm", "bin", "lspee.js"), join(rootBinDir, "lspee.js"));
+cpSync(
+	join(import.meta.dirname, "..", "..", "npm", "bin", "lspee.js"),
+	join(rootBinDir, "lspee.js"),
+);
 
 const optionalDependencies = {};
 for (const platform of PLATFORMS) {
@@ -133,7 +143,8 @@ for (const platform of PLATFORMS) {
 const rootPkg = {
 	name: "@ifi/lspee",
 	version: VERSION,
-	description: "Local LSP multiplexer for fast, shared, per-workspace language-server access",
+	description:
+		"Local LSP multiplexer for fast, shared, per-workspace language-server access",
 	license: "MIT OR Apache-2.0",
 	repository: {
 		type: "git",
@@ -147,7 +158,10 @@ const rootPkg = {
 	type: "module",
 };
 
-writeFileSync(join(rootDir, "package.json"), JSON.stringify(rootPkg, null, 2) + "\n");
+writeFileSync(
+	join(rootDir, "package.json"),
+	JSON.stringify(rootPkg, null, 2) + "\n",
+);
 console.log(`Built @ifi/lspee (root)`);
 
 console.log("Done.");

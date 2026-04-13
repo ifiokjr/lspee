@@ -1,12 +1,12 @@
 [package]
 name = "lspee"
 version.workspace = true
+documentation.workspace = true
 edition.workspace = true
-rust-version.workspace = true
+homepage.workspace = true
 license.workspace = true
 repository.workspace = true
-homepage.workspace = true
-documentation.workspace = true
+rust-version.workspace = true
 description = "Reserved crate name for the lspee project; implementation crates are published separately."
 
 [lib]

@@ -379,20 +379,22 @@ mod tests {
 
 	#[test]
 	fn control_envelope_roundtrips_for_call_payload() {
+		let call_payload = serde_json::to_value(Call {
+			lease_id: "lease_42".to_string(),
+			request: json!({
+				"jsonrpc": "2.0",
+				"id": 1,
+				"method": "initialize",
+				"params": {}
+			}),
+		})
+		.expect("call payload should serialize");
+
 		let envelope = ControlEnvelope {
 			v: PROTOCOL_VERSION,
 			id: Some("req-1".to_string()),
 			message_type: TYPE_CALL.to_string(),
-			payload: serde_json::to_value(Call {
-				lease_id: "lease_42".to_string(),
-				request: json!({
-					"jsonrpc": "2.0",
-					"id": 1,
-					"method": "initialize",
-					"params": {}
-				}),
-			})
-			.expect("call payload should serialize"),
+			payload: call_payload,
 		};
 
 		let encoded = serde_json::to_string(&envelope).expect("envelope should encode");

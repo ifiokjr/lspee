@@ -53,14 +53,14 @@ lspee call \
 
 Flags:
 
-| Flag | Description |
-|------|-------------|
-| `--lsp <id>` | LSP server identifier (required) |
-| `--root <path>` | Override project root |
-| `--request <json>` | Raw JSON-RPC payload or `@path/to/file.json` |
+| Flag                             | Description                                          |
+| -------------------------------- | ---------------------------------------------------- |
+| `--lsp <id>`                     | LSP server identifier (required)                     |
+| `--root <path>`                  | Override project root                                |
+| `--request <json>`               | Raw JSON-RPC payload or `@path/to/file.json`         |
 | `--client-kind agent\|human\|ci` | Caller kind for eviction priority (default: `human`) |
-| `--output json\|pretty` | Output format (default: `pretty`) |
-| `--no-start-daemon` | Disable daemon auto-start |
+| `--output json\|pretty`          | Output format (default: `pretty`)                    |
+| `--no-start-daemon`              | Disable daemon auto-start                            |
 
 The request must be a valid JSON-RPC 2.0 message. The response is the LSP server's JSON-RPC response.
 
@@ -72,12 +72,12 @@ Execute LSP methods with structured flags instead of raw JSON-RPC. The LSP serve
 
 All `lspee do` methods accept these flags:
 
-| Flag | Description |
-|------|-------------|
-| `--lsp <id>` | LSP server identifier (auto-resolved from file extension if omitted) |
-| `--root <path>` | Override project root |
-| `--output json\|pretty` | Output format (default: `json`) |
-| `--no-start-daemon` | Disable daemon auto-start |
+| Flag                    | Description                                                          |
+| ----------------------- | -------------------------------------------------------------------- |
+| `--lsp <id>`            | LSP server identifier (auto-resolved from file extension if omitted) |
+| `--root <path>`         | Override project root                                                |
+| `--output json\|pretty` | Output format (default: `json`)                                      |
+| `--no-start-daemon`     | Disable daemon auto-start                                            |
 
 #### Position-based methods
 
@@ -231,12 +231,12 @@ To use with Claude Desktop or other MCP clients, add to your MCP settings JSON:
 
 ```json
 {
-  "mcpServers": {
-    "lspee": {
-      "command": "lspee",
-      "args": ["mcp", "--project-root", "/path/to/project"]
-    }
-  }
+	"mcpServers": {
+		"lspee": {
+			"command": "lspee",
+			"args": ["mcp", "--project-root", "/path/to/project"]
+		}
+	}
 }
 ```
 
@@ -246,11 +246,11 @@ The daemon supports structured logging via the `tracing` framework for agent deb
 
 ### Environment variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LSPEE_LOG` | `lspee=info,warn` | Log level filter (uses `tracing_subscriber::EnvFilter` syntax) |
-| `LSPEE_LOG_FORMAT` | `human` | Log format: `human` for readable, `json` for structured output |
-| `LSPEE_LOG_FILE` | stderr | Write logs to a file instead of stderr |
+| Variable           | Default           | Description                                                    |
+| ------------------ | ----------------- | -------------------------------------------------------------- |
+| `LSPEE_LOG`        | `lspee=info,warn` | Log level filter (uses `tracing_subscriber::EnvFilter` syntax) |
+| `LSPEE_LOG_FORMAT` | `human`           | Log format: `human` for readable, `json` for structured output |
+| `LSPEE_LOG_FILE`   | stderr            | Write logs to a file instead of stderr                         |
 
 ### JSON log output
 
@@ -281,13 +281,13 @@ All `lspee call` requests must be valid JSON-RPC 2.0. Common patterns:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "textDocument/hover",
-  "params": {
-    "textDocument": { "uri": "file:///absolute/path/to/file.rs" },
-    "position": { "line": 10, "character": 5 }
-  }
+	"jsonrpc": "2.0",
+	"id": 1,
+	"method": "textDocument/hover",
+	"params": {
+		"textDocument": { "uri": "file:///absolute/path/to/file.rs" },
+		"position": { "line": 10, "character": 5 }
+	}
 }
 ```
 
@@ -295,13 +295,13 @@ All `lspee call` requests must be valid JSON-RPC 2.0. Common patterns:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "textDocument/definition",
-  "params": {
-    "textDocument": { "uri": "file:///absolute/path/to/file.rs" },
-    "position": { "line": 10, "character": 5 }
-  }
+	"jsonrpc": "2.0",
+	"id": 2,
+	"method": "textDocument/definition",
+	"params": {
+		"textDocument": { "uri": "file:///absolute/path/to/file.rs" },
+		"position": { "line": 10, "character": 5 }
+	}
 }
 ```
 
@@ -309,14 +309,14 @@ All `lspee call` requests must be valid JSON-RPC 2.0. Common patterns:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 3,
-  "method": "textDocument/references",
-  "params": {
-    "textDocument": { "uri": "file:///absolute/path/to/file.rs" },
-    "position": { "line": 10, "character": 5 },
-    "context": { "includeDeclaration": true }
-  }
+	"jsonrpc": "2.0",
+	"id": 3,
+	"method": "textDocument/references",
+	"params": {
+		"textDocument": { "uri": "file:///absolute/path/to/file.rs" },
+		"position": { "line": 10, "character": 5 },
+		"context": { "includeDeclaration": true }
+	}
 }
 ```
 
@@ -324,12 +324,12 @@ All `lspee call` requests must be valid JSON-RPC 2.0. Common patterns:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 4,
-  "method": "textDocument/documentSymbol",
-  "params": {
-    "textDocument": { "uri": "file:///absolute/path/to/file.rs" }
-  }
+	"jsonrpc": "2.0",
+	"id": 4,
+	"method": "textDocument/documentSymbol",
+	"params": {
+		"textDocument": { "uri": "file:///absolute/path/to/file.rs" }
+	}
 }
 ```
 
@@ -337,10 +337,10 @@ All `lspee call` requests must be valid JSON-RPC 2.0. Common patterns:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 5,
-  "method": "workspace/symbol",
-  "params": { "query": "MyStruct" }
+	"jsonrpc": "2.0",
+	"id": 5,
+	"method": "workspace/symbol",
+	"params": { "query": "MyStruct" }
 }
 ```
 
@@ -348,13 +348,13 @@ All `lspee call` requests must be valid JSON-RPC 2.0. Common patterns:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 6,
-  "method": "textDocument/completion",
-  "params": {
-    "textDocument": { "uri": "file:///absolute/path/to/file.rs" },
-    "position": { "line": 10, "character": 5 }
-  }
+	"jsonrpc": "2.0",
+	"id": 6,
+	"method": "textDocument/completion",
+	"params": {
+		"textDocument": { "uri": "file:///absolute/path/to/file.rs" },
+		"position": { "line": 10, "character": 5 }
+	}
 }
 ```
 
@@ -362,17 +362,17 @@ All `lspee call` requests must be valid JSON-RPC 2.0. Common patterns:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 7,
-  "method": "textDocument/codeAction",
-  "params": {
-    "textDocument": { "uri": "file:///absolute/path/to/file.rs" },
-    "range": {
-      "start": { "line": 10, "character": 0 },
-      "end": { "line": 10, "character": 20 }
-    },
-    "context": { "diagnostics": [] }
-  }
+	"jsonrpc": "2.0",
+	"id": 7,
+	"method": "textDocument/codeAction",
+	"params": {
+		"textDocument": { "uri": "file:///absolute/path/to/file.rs" },
+		"range": {
+			"start": { "line": 10, "character": 0 },
+			"end": { "line": 10, "character": 20 }
+		},
+		"context": { "diagnostics": [] }
+	}
 }
 ```
 
@@ -380,14 +380,14 @@ All `lspee call` requests must be valid JSON-RPC 2.0. Common patterns:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 8,
-  "method": "textDocument/rename",
-  "params": {
-    "textDocument": { "uri": "file:///absolute/path/to/file.rs" },
-    "position": { "line": 10, "character": 5 },
-    "newName": "better_name"
-  }
+	"jsonrpc": "2.0",
+	"id": 8,
+	"method": "textDocument/rename",
+	"params": {
+		"textDocument": { "uri": "file:///absolute/path/to/file.rs" },
+		"position": { "line": 10, "character": 5 },
+		"newName": "better_name"
+	}
 }
 ```
 
@@ -395,13 +395,13 @@ All `lspee call` requests must be valid JSON-RPC 2.0. Common patterns:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 9,
-  "method": "textDocument/formatting",
-  "params": {
-    "textDocument": { "uri": "file:///absolute/path/to/file.rs" },
-    "options": { "tabSize": 4, "insertSpaces": true }
-  }
+	"jsonrpc": "2.0",
+	"id": 9,
+	"method": "textDocument/formatting",
+	"params": {
+		"textDocument": { "uri": "file:///absolute/path/to/file.rs" },
+		"options": { "tabSize": 4, "insertSpaces": true }
+	}
 }
 ```
 
@@ -409,12 +409,12 @@ All `lspee call` requests must be valid JSON-RPC 2.0. Common patterns:
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "id": 10,
-  "method": "textDocument/diagnostic",
-  "params": {
-    "textDocument": { "uri": "file:///absolute/path/to/file.rs" }
-  }
+	"jsonrpc": "2.0",
+	"id": 10,
+	"method": "textDocument/diagnostic",
+	"params": {
+		"textDocument": { "uri": "file:///absolute/path/to/file.rs" }
+	}
 }
 ```
 
@@ -447,16 +447,16 @@ max_total_mb = 8192
 
 ## Error codes
 
-| Code | Meaning | Retryable |
-|------|---------|-----------|
-| `E_UNSUPPORTED_VERSION` | Protocol version mismatch | No |
-| `E_BAD_MESSAGE` | Invalid JSON or envelope | No |
-| `E_INVALID_SESSION_KEY` | Bad project_root, lsp_id, or config_hash | No |
-| `E_SESSION_SPAWN_FAILED` | LSP process failed to start | Yes |
-| `E_LEASE_NOT_FOUND` | Lease expired or invalid | No |
-| `E_SESSION_EVICTED_MEMORY` | Session killed for memory pressure | Yes |
-| `E_TIMEOUT` | Request timed out | Yes |
-| `E_INTERNAL` | Internal daemon error | Yes |
+| Code                       | Meaning                                  | Retryable |
+| -------------------------- | ---------------------------------------- | --------- |
+| `E_UNSUPPORTED_VERSION`    | Protocol version mismatch                | No        |
+| `E_BAD_MESSAGE`            | Invalid JSON or envelope                 | No        |
+| `E_INVALID_SESSION_KEY`    | Bad project_root, lsp_id, or config_hash | No        |
+| `E_SESSION_SPAWN_FAILED`   | LSP process failed to start              | Yes       |
+| `E_LEASE_NOT_FOUND`        | Lease expired or invalid                 | No        |
+| `E_SESSION_EVICTED_MEMORY` | Session killed for memory pressure       | Yes       |
+| `E_TIMEOUT`                | Request timed out                        | Yes       |
+| `E_INTERNAL`               | Internal daemon error                    | Yes       |
 
 ## Important notes
 

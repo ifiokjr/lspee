@@ -30,9 +30,13 @@ pub struct SessionKey {
 
 impl SessionKey {
 	#[must_use]
-	pub fn new(root: PathBuf, lsp_id: impl Into<String>, config_hash: impl Into<String>) -> Self {
+	pub fn new(
+		root: impl Into<PathBuf>,
+		lsp_id: impl Into<String>,
+		config_hash: impl Into<String>,
+	) -> Self {
 		Self {
-			root,
+			root: root.into(),
 			lsp_id: lsp_id.into(),
 			config_hash: config_hash.into(),
 		}
@@ -135,16 +139,25 @@ pub struct Lease {
 }
 
 impl Lease {
+	#[must_use]
 	pub fn key(&self) -> &SessionKey {
 		&self.key
 	}
 
+	#[must_use]
 	pub fn lease_id(&self) -> &str {
 		&self.id
 	}
 
-	pub async fn release(self) {
-		self.registry.release_by_lease_id(self.lease_id()).await;
+	/// Release this lease, returning a future that completes when the
+	/// release operation is finished.
+	///
+	/// # Errors
+	///
+	/// Returns an error if the underlying registry operation fails.
+	#[must_use = "futures do nothing unless you .await or poll them"]
+	pub async fn release(self) -> Option<usize> {
+		self.registry.release_by_lease_id(self.lease_id()).await
 	}
 }
 
@@ -200,7 +213,10 @@ impl SessionRegistry {
 
 	fn next_lease_id(&self) -> String {
 		let id = self.lease_seq.fetch_add(1, Ordering::Relaxed);
-		format!("lease_{id}")
+		let mut buf = String::with_capacity(6 + 20); // "lease_" + u64 max
+		buf.push_str("lease_");
+		buf.push_str(&id.to_string());
+		buf
 	}
 
 	#[instrument(skip(self, spawn), fields(lsp_id = %key.lsp_id))]
@@ -869,7 +885,7 @@ mod tests {
 			.unwrap();
 
 		assert_eq!(reg.lease_count().await, 1);
-		lease.release().await;
+		let _ = lease.release().await;
 		assert_eq!(reg.lease_count().await, 0);
 
 		let handles = reg.all_handles().await;

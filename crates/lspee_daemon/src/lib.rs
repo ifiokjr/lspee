@@ -768,11 +768,17 @@ fn ok_envelope<T: serde::Serialize>(
 	message_type: &str,
 	payload: T,
 ) -> ControlEnvelope<Value> {
+	// Serialization of internally-controlled types should never fail.
+	// Use a fallback value if it does to avoid panicking.
+	let payload = serde_json::to_value(payload).unwrap_or_else(|err| {
+		tracing::error!(error = %err, "failed to serialize ok payload");
+		Value::Null
+	});
 	ControlEnvelope {
 		v: PROTOCOL_VERSION,
 		id,
 		message_type: message_type.to_string(),
-		payload: serde_json::to_value(payload).expect("control payload must be serializable"),
+		payload,
 	}
 }
 
@@ -783,17 +789,27 @@ fn error_envelope(
 	retryable: bool,
 	details: Option<Value>,
 ) -> ControlEnvelope<Value> {
+	// Serialization of ErrorResponse should never fail.
+	// Use a minimal fallback if it does.
+	let payload = serde_json::to_value(ErrorResponse {
+		code: code.to_string(),
+		message: message.to_string(),
+		retryable,
+		details,
+	})
+	.unwrap_or_else(|err| {
+		tracing::error!(error = %err, "failed to serialize error payload");
+		json!({
+			"code": "E_SERIALIZATION_ERROR",
+			"message": "failed to serialize error response",
+			"retryable": true
+		})
+	});
 	ControlEnvelope {
 		v: PROTOCOL_VERSION,
 		id,
 		message_type: TYPE_ERROR.to_string(),
-		payload: serde_json::to_value(ErrorResponse {
-			code: code.to_string(),
-			message: message.to_string(),
-			retryable,
-			details,
-		})
-		.expect("error payload must be serializable"),
+		payload,
 	}
 }
 

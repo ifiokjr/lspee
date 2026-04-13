@@ -37,6 +37,7 @@ use tracing::instrument;
 /// assert_eq!(msg.method.as_deref(), Some("initialize"));
 /// ```
 #[derive(Debug, Clone)]
+#[must_use = "LspMessage should be processed or forwarded"]
 pub struct LspMessage {
 	pub id: Option<Value>,
 	pub method: Option<String>,
@@ -60,6 +61,7 @@ impl LspMessage {
 }
 
 #[derive(Clone)]
+#[must_use = "LspRuntime manages an LSP process and should be shut down properly"]
 pub struct LspRuntime {
 	inbound_tx: mpsc::Sender<Value>,
 	outbound_tx: broadcast::Sender<LspMessage>,
@@ -171,14 +173,24 @@ impl LspRuntime {
 }
 
 #[derive(Debug)]
+#[must_use = "LspTransport is a builder that must be used to spawn an LspRuntime"]
 pub struct LspTransport {
 	root: PathBuf,
 }
 
 impl LspTransport {
-	#[must_use]
-	pub fn new(root: PathBuf) -> Self {
-		Self { root }
+	/// Create a new `LspTransport` for the given project root.
+	///
+	/// # Examples
+	///
+	/// ```
+	/// use lspee_lsp::LspTransport;
+	/// use std::path::Path;
+	///
+	/// let transport = LspTransport::new(Path::new("/tmp/project"));
+	/// ```
+	pub fn new(root: impl Into<PathBuf>) -> Self {
+		Self { root: root.into() }
 	}
 
 	pub fn prepare(&self, lsp: &lspee_config::LspConfig) -> Result<()> {

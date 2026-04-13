@@ -29,6 +29,19 @@ lspee is an agent-first LSP multiplexer for fast, shared, per-workspace language
 - Never use `--no-verify` with `git commit` or `git push`.
 - The only allowed exception is during `git rebase` workflows when a rebase continuation or amend step would otherwise block on hooks/editor behavior.
 - Git hooks enforce formatting on commit (pre-commit) and full lint+test on push (pre-push).
+- **All commits must use [Conventional Commits](https://www.conventionalcommits.org/) syntax**: `type(scope): description` (e.g., `feat(daemon): add memory eviction`, `fix(cli): resolve config parsing error`).
+
+## Issue and PR rules
+
+- **Issues**:
+  - Use sentence case without a full stop at the end (e.g., "Add support for workspace symbols", "Fix memory leak in daemon").
+  - Keep titles short enough to fit on one line.
+  - Use backticks for code references when helpful (e.g., "`lspee do` should support multiple files").
+  
+- **Pull Requests**:
+  - Must use Conventional Commits syntax for the PR title (e.g., `feat: add hover support`, `refactor: simplify session registry`).
+  - PRs should use conventional commit syntax because they are squash-merged; the title becomes the commit message.
+  - Provide a clear description of what changed and why.
 
 ## Quality rules
 

@@ -1,8 +1,10 @@
 ---
-"lspee_cli": minor
-"lspee_daemon": minor
-"lspee_protocol": minor
+lspee_cli: minor
+lspee_daemon: minor
+lspee_protocol: minor
 ---
+
+# Editor proxy and helix sharing
 
 Add editor-facing proxy support so Helix and other stdio-based clients can share daemon-managed backend LSP sessions.
 

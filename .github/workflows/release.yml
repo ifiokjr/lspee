@@ -32,23 +32,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: setup mc
-        uses: ./.github/actions/setup-mc
+      - name: setup
+        uses: ./.github/actions/devenv
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: build monochange cli
-        run: |
-          cargo build --release --package monochange --bin mc
-          mkdir -p "$RUNNER_TEMP/bin"
-          cp target/release/mc "$RUNNER_TEMP/bin/mc"
-        shell: devenv shell -c -- bash -e {0}
 
       - name: prepare and commit release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          "$RUNNER_TEMP/bin/mc" release \
+          mc release \
             --commit \
             --create-pr
         shell: devenv shell -c -- bash -e {0}

@@ -2,12 +2,10 @@
   pkgs,
   lib,
   config,
-  inputs,
   ...
 }:
 
 let
-  extra = inputs.ifiokjr-nixpkgs.packages.${pkgs.stdenv.system};
 in
 
 {
@@ -18,7 +16,7 @@ in
       cargo-run-bin
       deno
       dprint
-      extra.monochange
+      monochange
       extra.pnpm-standalone
       git
       jq

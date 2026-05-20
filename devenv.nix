@@ -18,7 +18,7 @@ in
       cargo-run-bin
       deno
       dprint
-      monochangePkgs.monochange
+      (monochangePkgs.monochange)
       extra.pnpm-standalone
       git
       jq

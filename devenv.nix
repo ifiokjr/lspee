@@ -19,7 +19,7 @@ in
       deno
       dprint
       (monochangePkgs.monochange)
-      extra.pnpm-standalone
+      inputs.nixpkgs.legacyPackages.${pkgs.stdenv.system}.pnpm-standalone
       git
       jq
       mdbook

@@ -87,7 +87,7 @@ path = "crates/lspee_protocol"
 
 [package.lspee_test_helpers]
 path = "testing/lspee_test_helpers"
-publish = false
+release = false
 
 [package."@ifi/lspee-skill"]
 path = "npm/skill"

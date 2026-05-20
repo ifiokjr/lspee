@@ -21,6 +21,7 @@ in
       extra.monochange
       extra.pnpm-standalone
       git
+      jq
       mdbook
       nixfmt
       rustup

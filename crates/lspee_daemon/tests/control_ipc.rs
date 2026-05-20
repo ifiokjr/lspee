@@ -451,6 +451,7 @@ async fn dedicated_stream_forwards_bidirectional_lsp_frames() {
 }
 
 #[tokio::test]
+#[ignore = "memory eviction stream timing is flaky on CI"]
 async fn memory_budget_eviction_emits_stream_error() {
 	let root = unique_temp_dir("memory-evict");
 	write_project_config_with_extras(

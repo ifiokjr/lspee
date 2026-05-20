@@ -20,6 +20,7 @@ in
       dprint
       extra.monochange
       extra.pnpm-standalone
+      git
       mdbook
       nixfmt
       rustup

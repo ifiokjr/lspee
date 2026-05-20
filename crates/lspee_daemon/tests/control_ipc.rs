@@ -490,10 +490,16 @@ check_interval_ms = 25
 	let mut saw_eviction = false;
 
 	for _ in 0..100 {
-		if let Some(line) = stream_lines
-			.next_line()
-			.await
-			.expect("stream read should succeed")
+		let Some(line) =
+			(match tokio::time::timeout(Duration::from_millis(100), stream_lines.next_line()).await
+			{
+				Ok(Ok(line)) => line,
+				Ok(Err(error)) => panic!("stream read should succeed: {error}"),
+				Err(_) => continue,
+			})
+		else {
+			continue;
+		};
 		{
 			let response: lspee_daemon::StreamFrame<Value> =
 				serde_json::from_str(&line).expect("stream response should decode");

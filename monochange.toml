@@ -1,4 +1,4 @@
-#:schema https://raw.githubusercontent.com/monochange/monochange/main/docs/src/schemas/monochange.schema.json
+# :schema https://raw.githubusercontent.com/monochange/monochange/main/docs/src/schemas/monochange.schema.json
 
 # =============================================================================
 # monochange.toml — repository configuration for monochange

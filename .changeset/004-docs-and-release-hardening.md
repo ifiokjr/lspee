@@ -1,7 +1,9 @@
 ---
-"lspee_cli": patch
-"lspee_daemon": patch
+lspee_cli: patch
+lspee_daemon: patch
 ---
+
+# Docs and release hardening
 
 Add release hardening assets and documentation updates:
 

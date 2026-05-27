@@ -7,7 +7,7 @@
 }:
 
 let
-  extra = inputs.ifiokjr-nixpkgs.packages.${pkgs.stdenv.system};
+  monochangePkgs = inputs.ifiokjr-nixpkgs.packages.${pkgs.stdenv.system};
 in
 
 {
@@ -18,7 +18,10 @@ in
       cargo-run-bin
       deno
       dprint
-      extra.pnpm-standalone
+      (monochangePkgs.monochange)
+      inputs.ifiokjr-nixpkgs.packages.${pkgs.stdenv.system}.pnpm-standalone
+      git
+      jq
       mdbook
       nixfmt
       rustup

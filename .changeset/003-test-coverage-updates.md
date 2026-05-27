@@ -1,9 +1,11 @@
 ---
-"lspee_daemon": patch
-"lspee_lsp": patch
-"lspee_protocol": patch
-"lspee_config": patch
+lspee_daemon: patch
+lspee_lsp: patch
+lspee_protocol: patch
+lspee_config: patch
 ---
+
+# Test coverage updates
 
 Expand test coverage with integration and unit tests:
 

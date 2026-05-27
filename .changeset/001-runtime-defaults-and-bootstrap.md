@@ -1,8 +1,10 @@
 ---
-"lspee_daemon": minor
-"lspee_lsp": minor
-"lspee_config": minor
+lspee_daemon: minor
+lspee_lsp: minor
+lspee_config: minor
 ---
+
+# Runtime defaults and bootstrap
 
 Implement runtime LSP command resolution from the default language catalog and add daemon session bootstrap (`initialize` + `initialized`) when spawning shared sessions.
 

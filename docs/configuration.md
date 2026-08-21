@@ -1,14 +1,14 @@
 # Configuration
 
-`lspee` resolves configuration in layered order and computes deterministic session identity.
+`monokit` resolves configuration in layered order and computes deterministic session identity.
 
 ## Layering Order
 
 The effective configuration is merged in this precedence order (lowest to highest):
 
 1. Built-in defaults
-2. User config: `~/.config/lspee/config.toml`
-3. Project config: `<project_root>/lspee.toml`
+2. User config: `~/.config/monokit/config.toml`
+3. Project config: `<project_root>/monokit.toml`
 
 Higher layers overwrite lower layers at field granularity.
 
@@ -19,7 +19,7 @@ By default, project root is the current working directory, canonicalized via rea
 CLI supports a root override:
 
 ```bash
-lspee lsp --project-root /path/to/repo
+monokit lsp --project-root /path/to/repo
 ```
 
 This override participates in identity and config file lookup.

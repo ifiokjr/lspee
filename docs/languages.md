@@ -1,19 +1,19 @@
 # Language Registry
 
-`lspee` ships with a built-in language-to-LSP registry inspired by Helix `languages.toml`.
+`monokit` ships with a built-in language-to-LSP registry inspired by Helix `languages.toml`.
 
 The default catalog currently includes **100 pre-seeded LSP server entries** covering common languages and ecosystems.
 
 Default registry file:
 
-- `crates/lspee_config/defaults/languages.toml`
+- `crates/monokit_config/defaults/languages.toml`
 
 ## Querying by File
 
 Use the CLI to ask which LSP servers apply to a file:
 
 ```bash
-lspee lsps --file src/main.rs
+monokit lsps --file src/main.rs
 ```
 
 Output includes:
@@ -27,8 +27,8 @@ Output includes:
 
 Registry defaults are loaded first, then overlays are attempted from:
 
-1. `~/.config/lspee/config.toml`
-2. `<file-parent>/lspee.toml`
+1. `~/.config/monokit/config.toml`
+2. `<file-parent>/monokit.toml`
 
 Current override hook uses `[[lsp]]` fields from layered config to replace command/args for a matching `lsp.id`.
 

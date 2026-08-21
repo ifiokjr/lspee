@@ -1,0 +1,68 @@
+[package]
+name = "monokit_summary"
+version.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Multi-level codebase summaries optimised for LLM consumption"
+
+[lints]
+workspace = true
+
+[features]
+default = ["outline"]
+# Tree-sitter outline extraction engine. When off, only regex and syn are used.
+outline = ["dep:tree-sitter"]
+# Individual grammar features — each pulls in the corresponding grammar crate.
+lang-rust = ["outline", "dep:tree-sitter-rust"]
+lang-typescript = ["outline", "dep:tree-sitter-typescript"]
+lang-python = ["outline", "dep:tree-sitter-python"]
+lang-go = ["outline", "dep:tree-sitter-go"]
+lang-java = ["outline", "dep:tree-sitter-java"]
+lang-c = ["outline", "dep:tree-sitter-c"]
+lang-cpp = ["outline", "dep:tree-sitter-cpp"]
+lang-c-sharp = ["outline", "dep:tree-sitter-c-sharp"]
+lang-ruby = ["outline", "dep:tree-sitter-ruby"]
+lang-json = ["outline", "dep:tree-sitter-json"]
+# Convenience: enable all tree-sitter grammars at once.
+all-grammars = [
+	"lang-rust",
+	"lang-typescript",
+	"lang-python",
+	"lang-go",
+	"lang-java",
+	"lang-c",
+	"lang-cpp",
+	"lang-c-sharp",
+	"lang-ruby",
+	"lang-json",
+]
+
+[dependencies]
+anyhow = { workspace = true, default-features = true }
+proc-macro2 = { version = "1", default-features = false, features = ["span-locations"] }
+quote = "1"
+serde = { workspace = true, default-features = true, features = ["derive"] }
+serde_json = { workspace = true, default-features = true }
+syn = { version = "2", default-features = false, features = ["full", "parsing", "printing", "visit", "extra-traits"] }
+
+# Tree-sitter core — pulled in by the "outline" feature.
+tree-sitter = { version = "0.26", optional = true }
+
+# Grammar crates — each is optional and pulled in by its feature flag.
+tree-sitter-c = { version = "0.24", optional = true }
+tree-sitter-c-sharp = { version = "0.23", optional = true }
+tree-sitter-cpp = { version = "0.23", optional = true }
+tree-sitter-go = { version = "0.25", optional = true }
+tree-sitter-java = { version = "0.23", optional = true }
+tree-sitter-json = { version = "0.24", optional = true }
+tree-sitter-python = { version = "0.25", optional = true }
+tree-sitter-ruby = { version = "0.23", optional = true }
+tree-sitter-rust = { version = "0.24", optional = true }
+tree-sitter-typescript = { version = "0.23", optional = true }
+
+[dev-dependencies]
+insta = { workspace = true }

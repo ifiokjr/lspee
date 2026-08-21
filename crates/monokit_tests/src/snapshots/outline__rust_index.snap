@@ -1,0 +1,5 @@
+---
+source: crates/monokit_tests/src/outline.rs
+expression: output
+---
+example.rs: ParseError, Config, Ast, Node, Literal, Parse, new, line_at, parse, format_node

@@ -1,6 +1,6 @@
 # Memory Budgets and Eviction
 
-`lspee` can enforce memory budgets for daemon-managed sessions.
+`monokit` can enforce memory budgets for daemon-managed sessions.
 
 ## Configuration
 
@@ -30,7 +30,7 @@ Current policy is **idle LRU with editor protection bias**:
 When a session is evicted for memory pressure:
 
 - agent-style `call` requests receive a structured daemon error
-- dedicated stream clients (`lspee proxy`) receive a terminal stream error
+- dedicated stream clients (`monokit proxy`) receive a terminal stream error
 - proxy converts that into an LSP `window/showMessage` warning for editors
 
 ## Resume instructions

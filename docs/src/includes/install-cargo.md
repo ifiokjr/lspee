@@ -1,3 +1,3 @@
 ```bash
-cargo install --path crates/lspee_cli
+cargo install --path crates/monokit_cli
 ```

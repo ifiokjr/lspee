@@ -1,8 +1,8 @@
 ---
-"lspee_daemon": minor
-"lspee_config": minor
-"lspee_protocol": minor
-"lspee_cli": patch
+"monokit_daemon": minor
+"monokit_config": minor
+"monokit_protocol": minor
+"monokit_cli": patch
 ---
 
 Add daemon-side memory budgets and eviction policy for shared LSP sessions.
@@ -13,4 +13,4 @@ Highlights:
 - periodic RSS sampling for backend processes
 - idle/LRU-biased eviction with editor protection bias
 - structured memory eviction warnings and resume hints
-- memory totals/limits included in `lspee status`
+- memory totals/limits included in `monokit status`

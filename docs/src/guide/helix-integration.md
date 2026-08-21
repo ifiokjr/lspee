@@ -1,34 +1,34 @@
 # Helix Integration
 
-`lspee proxy` lets Helix share the same daemon-managed backend session used by agents.
+`monokit proxy` lets Helix share the same daemon-managed backend session used by agents.
 
 ## Why proxy mode exists
 
 Helix expects a normal LSP process over stdio.
 
-`lspee proxy` sits between Helix and the daemon:
+`monokit proxy` sits between Helix and the daemon:
 
-- Helix speaks standard LSP to `lspee proxy`
+- Helix speaks standard LSP to `monokit proxy`
 - proxy attaches to daemon using a dedicated stream
 - daemon forwards real LSP traffic to the shared backend runtime
 
 ## Command shape
 
 ```bash
-lspee proxy --lsp rust-analyzer --root /abs/project
+monokit proxy --lsp rust-analyzer --root /abs/project
 ```
 
 ## Helix example
 
-In `languages.toml` you can point Rust at `lspee`:
+In `languages.toml` you can point Rust at `monokit`:
 
 ```toml
 [[language]]
 name = "rust"
-language-servers = ["lspee-rust-analyzer"]
+language-servers = ["monokit-rust-analyzer"]
 
-[language-server.lspee-rust-analyzer]
-command = "lspee"
+[language-server.monokit-rust-analyzer]
+command = "monokit"
 args = ["proxy", "--lsp", "rust-analyzer", "--root", "/abs/project"]
 ```
 
@@ -36,7 +36,7 @@ In practice you will usually wrap root resolution in a script so the current wor
 
 ## Lifecycle behavior
 
-`lspee proxy` intercepts editor-facing lifecycle messages:
+`monokit proxy` intercepts editor-facing lifecycle messages:
 
 - `initialize` → answered locally from daemon-cached backend initialize result
 - `initialized` → swallowed locally

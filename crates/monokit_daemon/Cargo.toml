@@ -1,0 +1,24 @@
+[package]
+name = "monokit_daemon"
+version.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = { workspace = true, default-features = true }
+monokit_config = { path = "../monokit_config" }
+monokit_lsp = { path = "../monokit_lsp" }
+monokit_protocol = { path = "../monokit_protocol" }
+serde = { workspace = true, default-features = true, features = ["derive"] }
+serde_json = { workspace = true, default-features = true }
+thiserror = { workspace = true, default-features = true }
+tokio = { workspace = true, default-features = true, features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "io-std", "net", "fs", "process"] }
+tracing = { workspace = true, default-features = true }
+url = { workspace = true, default-features = true }

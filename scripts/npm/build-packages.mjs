@@ -30,55 +30,55 @@ const OUT = values.out;
 
 const PLATFORMS = [
 	{
-		packageName: "@ifi/lspee-darwin-arm64",
+		packageName: "@ifi/monokit-darwin-arm64",
 		target: "aarch64-apple-darwin",
 		os: "darwin",
 		cpu: "arm64",
-		binaryName: "lspee",
+		binaryName: "monokit",
 		archiveExt: "tar.gz",
 	},
 	{
-		packageName: "@ifi/lspee-darwin-x64",
+		packageName: "@ifi/monokit-darwin-x64",
 		target: "x86_64-apple-darwin",
 		os: "darwin",
 		cpu: "x64",
-		binaryName: "lspee",
+		binaryName: "monokit",
 		archiveExt: "tar.gz",
 	},
 	{
-		packageName: "@ifi/lspee-linux-arm64-gnu",
+		packageName: "@ifi/monokit-linux-arm64-gnu",
 		target: "aarch64-unknown-linux-gnu",
 		os: "linux",
 		cpu: "arm64",
 		libc: "glibc",
-		binaryName: "lspee",
+		binaryName: "monokit",
 		archiveExt: "tar.gz",
 	},
 	{
-		packageName: "@ifi/lspee-linux-arm64-musl",
+		packageName: "@ifi/monokit-linux-arm64-musl",
 		target: "aarch64-unknown-linux-musl",
 		os: "linux",
 		cpu: "arm64",
 		libc: "musl",
-		binaryName: "lspee",
+		binaryName: "monokit",
 		archiveExt: "tar.gz",
 	},
 	{
-		packageName: "@ifi/lspee-linux-x64-gnu",
+		packageName: "@ifi/monokit-linux-x64-gnu",
 		target: "x86_64-unknown-linux-gnu",
 		os: "linux",
 		cpu: "x64",
 		libc: "glibc",
-		binaryName: "lspee",
+		binaryName: "monokit",
 		archiveExt: "tar.gz",
 	},
 	{
-		packageName: "@ifi/lspee-linux-x64-musl",
+		packageName: "@ifi/monokit-linux-x64-musl",
 		target: "x86_64-unknown-linux-musl",
 		os: "linux",
 		cpu: "x64",
 		libc: "musl",
-		binaryName: "lspee",
+		binaryName: "monokit",
 		archiveExt: "tar.gz",
 	},
 ];
@@ -103,13 +103,13 @@ for (const platform of PLATFORMS) {
 	const pkg = {
 		name: platform.packageName,
 		version: VERSION,
-		description: `Prebuilt lspee binary for ${platform.os} ${platform.cpu}${
+		description: `Prebuilt monokit binary for ${platform.os} ${platform.cpu}${
 			platform.libc ? ` (${platform.libc})` : ""
 		}`,
 		license: "MIT OR Apache-2.0",
 		repository: {
 			type: "git",
-			url: "git+https://github.com/ifiokjr/lspee.git",
+			url: "git+https://github.com/ifiokjr/monokit.git",
 		},
 		os: [platform.os],
 		cpu: [platform.cpu],
@@ -126,13 +126,13 @@ for (const platform of PLATFORMS) {
 }
 
 // Build root package
-const rootDir = join(OUT, "@ifi-lspee");
+const rootDir = join(OUT, "@ifi-monokit");
 const rootBinDir = join(rootDir, "bin");
 mkdirSync(rootBinDir, { recursive: true });
 
 cpSync(
-	join(import.meta.dirname, "..", "..", "npm", "bin", "lspee.js"),
-	join(rootBinDir, "lspee.js"),
+	join(import.meta.dirname, "..", "..", "npm", "bin", "monokit.js"),
+	join(rootBinDir, "monokit.js"),
 );
 
 const optionalDependencies = {};
@@ -141,16 +141,16 @@ for (const platform of PLATFORMS) {
 }
 
 const rootPkg = {
-	name: "@ifi/lspee",
+	name: "@ifi/monokit",
 	version: VERSION,
 	description:
 		"Local LSP multiplexer for fast, shared, per-workspace language-server access",
 	license: "MIT OR Apache-2.0",
 	repository: {
 		type: "git",
-		url: "git+https://github.com/ifiokjr/lspee.git",
+		url: "git+https://github.com/ifiokjr/monokit.git",
 	},
-	bin: { lspee: "bin/lspee.js" },
+	bin: { monokit: "bin/monokit.js" },
 	optionalDependencies,
 	files: ["bin", "LICENSE", "README.md"],
 	publishConfig: { access: "public", provenance: true },
@@ -162,6 +162,6 @@ writeFileSync(
 	join(rootDir, "package.json"),
 	JSON.stringify(rootPkg, null, 2) + "\n",
 );
-console.log(`Built @ifi/lspee (root)`);
+console.log(`Built @ifi/monokit (root)`);
 
 console.log("Done.");

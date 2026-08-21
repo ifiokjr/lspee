@@ -1,0 +1,17 @@
+{
+  "name": "example-project",
+  "version": "1.0.0",
+  "description": "Example project for outline extraction testing",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "typescript": "^5.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}

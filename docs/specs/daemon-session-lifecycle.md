@@ -1,8 +1,8 @@
-# Lspee Daemon & Session Lifecycle (LSP Multiplexing)
+# Monokit Daemon & Session Lifecycle (LSP Multiplexing)
 
 ## Goal
 
-Define how `lspee` multiplexes Language Server Protocol (LSP) sessions via a background daemon so repeated CLI invocations can reuse warm server processes safely and predictably.
+Define how `monokit` multiplexes Language Server Protocol (LSP) sessions via a background daemon so repeated CLI invocations can reuse warm server processes safely and predictably.
 
 Core requirements:
 
@@ -17,7 +17,7 @@ Core requirements:
 
 ## Components
 
-### 1. `lspee` CLI (foreground client)
+### 1. `monokit` CLI (foreground client)
 
 Responsibilities:
 
@@ -91,7 +91,7 @@ If any of these change, broker creates a distinct session.
 
 Local IPC endpoint used by CLI and daemon:
 
-- Unix (implemented): `<project_root>/.lspee/daemon.sock`
+- Unix (implemented): `<project_root>/.monokit/daemon.sock`
 - Windows named pipes: planned, not yet implemented
 
 Control protocol (framed JSON messages) examples:
@@ -250,7 +250,7 @@ Useful counters:
 
 ## Minimal End-to-End Flow
 
-1. Editor invokes `lspee lsp --id rust-analyzer`.
+1. Editor invokes `monokit lsp --id rust-analyzer`.
 2. CLI computes `(project_root, config_hash, lsp_id)`.
 3. CLI connects to daemon, sends `Attach`.
 4. Daemon finds/creates session.
@@ -264,15 +264,15 @@ Useful counters:
 
 ## Suggested Implementation Boundaries
 
-- `lspee_cli`:
+- `monokit_cli`:
   - key computation
   - daemon discovery/launch
   - attach/release plumbing
-- `lspee_daemon`:
+- `monokit_daemon`:
   - socket server
   - registry + GC loop
   - session orchestration
-- `lspee_lsp`:
+- `monokit_lsp`:
   - LSP child process adapter
   - protocol bridging/multiplex helpers
 

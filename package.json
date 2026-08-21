@@ -1,11 +1,11 @@
 {
 	"private": true,
-	"name": "@ifi/lspee-root",
-	"description": "Monorepo root for lspee npm packages",
+	"name": "@ifi/monokit-root",
+	"description": "Monorepo root for monokit npm packages",
 	"license": "MIT OR Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/ifiokjr/lspee.git"
+		"url": "git+https://github.com/ifiokjr/monokit.git"
 	},
 	"engines": {
 		"node": ">=18"

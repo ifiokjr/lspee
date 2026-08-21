@@ -26,8 +26,8 @@ Envelope:
 
 `Attach.capabilities.stream_mode` supports:
 
-- `mux_control` — control-only clients (`lspee call`)
-- `dedicated` — separate per-lease stream socket (`lspee proxy`)
+- `mux_control` — control-only clients (`monokit call`)
+- `dedicated` — separate per-lease stream socket (`monokit proxy`)
 
 When `dedicated` is requested, `AttachOk.stream.endpoint` returns a Unix socket endpoint for `StreamFrame` traffic.
 
@@ -39,7 +39,7 @@ When `dedicated` is requested, `AttachOk.stream.endpoint` returns a Unix socket 
 
 ## Canonical definitions
 
-See `crates/lspee_protocol/src/lib.rs` for authoritative structs/constants.
+See `crates/monokit_protocol/src/lib.rs` for authoritative structs/constants.
 
 ## Important error codes
 

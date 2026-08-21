@@ -1,13 +1,13 @@
 ---
-"lspee_cli": minor
-"lspee_daemon": minor
-"lspee_protocol": minor
+"monokit_cli": minor
+"monokit_daemon": minor
+"monokit_protocol": minor
 ---
 
 Add daemon lifecycle control commands and protocol support:
 
 - `Shutdown` / `ShutdownOk` control message types
-- `lspee stop`
-- `lspee restart`
+- `monokit stop`
+- `monokit restart`
 
 Daemon now supports graceful shutdown through protocol rather than relying on out-of-band process killing.

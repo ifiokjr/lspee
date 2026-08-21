@@ -9,9 +9,9 @@ Likely causes:
 
 Actions:
 
-1. run `lspee doctor`
-2. check `lspee lsps --file <file> --output json`
-3. set `[[lsp]]` override in `lspee.toml`
+1. run `monokit doctor`
+2. check `monokit lsps --file <file> --output json`
+3. set `[[lsp]]` override in `monokit.toml`
 
 ## `failed to connect to daemon socket`
 
@@ -21,7 +21,7 @@ Actions:
 Actions:
 
 ```bash
-lspee restart
+monokit restart
 ```
 
 ## Unexpected response type
@@ -36,7 +36,7 @@ Actions:
 ## Reset everything
 
 ```bash
-lspee stop
-rm -rf .lspee
-lspee status
+monokit stop
+rm -rf .monokit
+monokit status
 ```

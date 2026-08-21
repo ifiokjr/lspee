@@ -1,6 +1,6 @@
-# Using lspee from Agents
+# Using monokit from Agents
 
-`lspee` is optimized for machine orchestration.
+`monokit` is optimized for machine orchestration.
 
 ## Use JSON output everywhere
 
@@ -11,7 +11,7 @@
 Always pass explicit root:
 
 ```bash
-lspee call --root /abs/project --lsp rust-analyzer --client-kind agent --request @request.json --output json
+monokit call --root /abs/project --lsp rust-analyzer --client-kind agent --request @request.json --output json
 ```
 
 ## Recommended request pattern
@@ -29,5 +29,5 @@ Multiple agents can share one session when the session key {{#include ../include
 For ephemeral jobs:
 
 ```bash
-lspee stop --project-root /abs/project
+monokit stop --project-root /abs/project
 ```

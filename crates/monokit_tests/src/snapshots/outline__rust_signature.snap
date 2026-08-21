@@ -1,0 +1,15 @@
+---
+source: crates/monokit_tests/src/outline.rs
+expression: output
+---
+--- example.rs ---
+L  16       Enum ParseError enum ParseError // Errors that can occur during parsing.
+L  24     Struct Config struct Config // Configuration for the parser.
+L  32     Struct Ast struct Ast // A parsed abstract syntax tree.
+L  40       Enum Node enum Node // A single node in the AST.
+L  48     Struct Literal struct Literal // A literal value in the AST.
+L  56      Trait Parse trait Parse // Trait for types that can be parsed from source text.
+L  70   Function new fn new (root : Node) -> Self // Create a new AST from a root node.
+L  78   Function line_at fn line_at (& self , offset : usize) -> Option < u32 > // Look up the line number for a byte offset.
+L  87   Function parse fn parse (input : & str) -> Result < Ast , ParseError > // Parse a string into an AST.
+L  99   Function format_node fn format_node (node : & Node) -> String // Format an AST node for display.

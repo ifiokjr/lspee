@@ -1,8 +1,8 @@
 ---
-"lspee_daemon": patch
-"lspee_lsp": patch
-"lspee_protocol": patch
-"lspee_config": patch
+"monokit_daemon": patch
+"monokit_lsp": patch
+"monokit_protocol": patch
+"monokit_config": patch
 ---
 
 Expand test coverage with integration and unit tests:

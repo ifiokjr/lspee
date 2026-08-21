@@ -15,8 +15,8 @@
 - [Language Catalog (Top 100 Defaults)](./guide/language-catalog.md)
 - [Helix Integration](./guide/helix-integration.md)
 - [Memory Budgets and Eviction](./guide/memory-budgets.md)
-- [Using lspee from Agents](./guide/agent-usage.md)
-- [Using lspee from Terminals/Editors](./guide/human-usage.md)
+- [Using monokit from Agents](./guide/agent-usage.md)
+- [Using monokit from Terminals/Editors](./guide/human-usage.md)
 - [Troubleshooting](./guide/troubleshooting.md)
 
 # Reference

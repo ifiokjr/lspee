@@ -1,0 +1,5 @@
+---
+source: crates/monokit_tests/src/outline.rs
+expression: output
+---
+example.json: name, version, description, main, scripts, build, test, lint, dependencies, typescript, devDependencies, jest

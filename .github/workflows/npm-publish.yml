@@ -78,8 +78,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/release-assets"
           gh release download "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
-            --pattern "lspee-*-${RELEASE_TAG}.tar.gz" \
-            --pattern "lspee-*-${RELEASE_TAG}.zip" \
+            --pattern "monokit-*-${RELEASE_TAG}.tar.gz" \
+            --pattern "monokit-*-${RELEASE_TAG}.zip" \
             --dir "$RUNNER_TEMP/release-assets"
 
       - name: build npm packages
@@ -100,7 +100,7 @@ jobs:
           VERSION="${RELEASE_TAG#v}"
           node scripts/npm/prepare-skill-package.mjs \
             --version "$VERSION" \
-            --out-dir "$RUNNER_TEMP/lspee-skill"
+            --out-dir "$RUNNER_TEMP/monokit-skill"
 
       - name: publish npm packages
         env:

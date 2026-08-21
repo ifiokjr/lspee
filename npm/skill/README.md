@@ -1,27 +1,27 @@
-# @ifi/lspee-skill
+# @ifi/monokit-skill
 
-Agent skill package for [lspee](https://github.com/ifiokjr/lspee) — teaches AI agents how to use LSP servers for code intelligence.
+Agent skill package for [monokit](https://github.com/ifiokjr/monokit) — teaches AI agents how to use LSP servers for code intelligence.
 
 ## Install
 
 ```bash
-npm install -g @ifi/lspee-skill
+npm install -g @ifi/monokit-skill
 ```
 
 ## Usage
 
 ```bash
 # Print the concise agent skill guide
-lspee-skill --print-skill
+monokit-skill --print-skill
 
 # Print the full command reference
-lspee-skill --print-reference
+monokit-skill --print-reference
 
 # Copy skill files to a directory
-lspee-skill --copy ~/.config/agent-skills/lspee
+monokit-skill --copy ~/.config/agent-skills/monokit
 
 # Print installation instructions
-lspee-skill --print-install
+monokit-skill --print-install
 ```
 
 ## What's included
@@ -31,5 +31,5 @@ lspee-skill --print-install
 
 ## Related
 
-- [@ifi/lspee](https://www.npmjs.com/package/@ifi/lspee) — the CLI binary
-- [lspee on GitHub](https://github.com/ifiokjr/lspee)
+- [@ifi/monokit](https://www.npmjs.com/package/@ifi/monokit) — the CLI binary
+- [monokit on GitHub](https://github.com/ifiokjr/monokit)

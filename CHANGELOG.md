@@ -12,12 +12,12 @@ All notable changes to this project are documented in this file.
 - JSON-RPC LSP subprocess bridge with Content-Length framing.
 - Agent + human CLI output modes.
 - Daemon lifecycle commands: `serve`, `stop`, `restart`.
-- `lspee proxy` for editor-facing shared LSP sessions.
+- `monokit proxy` for editor-facing shared LSP sessions.
 - Per-session and total memory budgets with eviction warnings.
 - Helix-inspired default language catalog with 100 LSP definitions.
 - mdBook documentation under `docs/src`.
 - Release hardening assets (licenses, CI workflow, changesets).
-- Stub crate `lspee` for package-name reservation.
+- Stub crate `monokit` for package-name reservation.
 
 ### Changed
 
@@ -26,4 +26,4 @@ All notable changes to this project are documented in this file.
 
 ### Fixed
 
-- Removed scaffold-only call path; `lspee call` now forwards real JSON-RPC payloads.
+- Removed scaffold-only call path; `monokit call` now forwards real JSON-RPC payloads.

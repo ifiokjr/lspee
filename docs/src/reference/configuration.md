@@ -47,8 +47,8 @@ Built-in catalog file:
 
 The catalog powers:
 
-- `lspee lsps --file ...`
-- runtime fallback command resolution for `lspee call --lsp <id>`
+- `monokit lsps --file ...`
+- runtime fallback command resolution for `monokit call --lsp <id>`
 
 ## Notes
 

@@ -1,11 +1,11 @@
 {
-	"name": "@ifi/lspee-skill",
+	"name": "@ifi/monokit-skill",
 	"version": "0.0.0",
-	"description": "Installable agent skill for lspee — teaches AI agents how to use LSP servers for code intelligence",
+	"description": "Installable agent skill for monokit — teaches AI agents how to use LSP servers for code intelligence",
 	"license": "MIT OR Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/ifiokjr/lspee.git",
+		"url": "git+https://github.com/ifiokjr/monokit.git",
 		"directory": "npm/skill"
 	},
 	"files": [
@@ -16,7 +16,7 @@
 		"LICENSE"
 	],
 	"bin": {
-		"lspee-skill": "bin/lspee-skill.js"
+		"monokit-skill": "bin/monokit-skill.js"
 	},
 	"publishConfig": {
 		"access": "public",
@@ -26,7 +26,7 @@
 		"node": ">=18"
 	},
 	"keywords": [
-		"lspee",
+		"monokit",
 		"lsp",
 		"language-server",
 		"skill",

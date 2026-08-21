@@ -2,7 +2,7 @@
 
 /**
  * Prepares the skill package for publishing.
- * Copies SKILL.md and REFERENCE.md from skills/lspee/ into npm/skill/.
+ * Copies SKILL.md and REFERENCE.md from skills/monokit/ into npm/skill/.
  *
  * Usage: node scripts/npm/prepare-skill-package.mjs [--version 0.1.0]
  */
@@ -19,7 +19,7 @@ const { values } = parseArgs({
 });
 
 const ROOT = join(import.meta.dirname, "..", "..");
-const SKILLS_SRC = join(ROOT, "skills", "lspee");
+const SKILLS_SRC = join(ROOT, "skills", "monokit");
 const SKILL_PKG = join(ROOT, "npm", "skill");
 
 // Copy skill files from source of truth.

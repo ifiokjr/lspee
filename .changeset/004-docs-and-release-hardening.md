@@ -1,6 +1,6 @@
 ---
-"lspee_cli": patch
-"lspee_daemon": patch
+"monokit_cli": patch
+"monokit_daemon": patch
 ---
 
 Add release hardening assets and documentation updates:

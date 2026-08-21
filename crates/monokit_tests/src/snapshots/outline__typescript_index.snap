@@ -1,0 +1,5 @@
+---
+source: crates/monokit_tests/src/outline.rs
+expression: output
+---
+example.ts: ProcessorConfig, ProcessResult, JobStatus, WorkerPool, constructor, process, shutdown, parseJson

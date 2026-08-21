@@ -1,0 +1,112 @@
+---
+source: crates/monokit_tests/src/summary.rs
+expression: json
+---
+{
+  "root": "example.rs",
+  "level": "signature",
+  "files": [
+    {
+      "file_path": "example.rs",
+      "level": "signature",
+      "items": [
+        {
+          "name": "ParseError",
+          "kind": "enum",
+          "line": 16,
+          "signature": "enum ParseError",
+          "first_doc_line": "Errors that can occur during parsing.",
+          "full_docs": null,
+          "parent_path": []
+        },
+        {
+          "name": "Config",
+          "kind": "struct",
+          "line": 24,
+          "signature": "struct Config",
+          "first_doc_line": "Configuration for the parser.",
+          "full_docs": null,
+          "parent_path": []
+        },
+        {
+          "name": "Ast",
+          "kind": "struct",
+          "line": 32,
+          "signature": "struct Ast",
+          "first_doc_line": "A parsed abstract syntax tree.",
+          "full_docs": null,
+          "parent_path": []
+        },
+        {
+          "name": "Node",
+          "kind": "enum",
+          "line": 40,
+          "signature": "enum Node",
+          "first_doc_line": "A single node in the AST.",
+          "full_docs": null,
+          "parent_path": []
+        },
+        {
+          "name": "Literal",
+          "kind": "struct",
+          "line": 48,
+          "signature": "struct Literal",
+          "first_doc_line": "A literal value in the AST.",
+          "full_docs": null,
+          "parent_path": []
+        },
+        {
+          "name": "Parse",
+          "kind": "trait",
+          "line": 56,
+          "signature": "trait Parse",
+          "first_doc_line": "Trait for types that can be parsed from source text.",
+          "full_docs": null,
+          "parent_path": []
+        },
+        {
+          "name": "new",
+          "kind": "function",
+          "line": 70,
+          "signature": "fn new (root : Node) -> Self",
+          "first_doc_line": "Create a new AST from a root node.",
+          "full_docs": null,
+          "parent_path": [
+            "Ast",
+            "impl"
+          ]
+        },
+        {
+          "name": "line_at",
+          "kind": "function",
+          "line": 78,
+          "signature": "fn line_at (& self , offset : usize) -> Option < u32 >",
+          "first_doc_line": "Look up the line number for a byte offset.",
+          "full_docs": null,
+          "parent_path": [
+            "Ast",
+            "impl"
+          ]
+        },
+        {
+          "name": "parse",
+          "kind": "function",
+          "line": 87,
+          "signature": "fn parse (input : & str) -> Result < Ast , ParseError >",
+          "first_doc_line": "Parse a string into an AST.",
+          "full_docs": null,
+          "parent_path": []
+        },
+        {
+          "name": "format_node",
+          "kind": "function",
+          "line": 99,
+          "signature": "fn format_node (node : & Node) -> String",
+          "first_doc_line": "Format an AST node for display.",
+          "full_docs": null,
+          "parent_path": []
+        }
+      ]
+    }
+  ]
+}

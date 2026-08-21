@@ -1,1 +1,1 @@
-`crates/lspee_config/defaults/languages.toml`
+`crates/monokit_config/defaults/languages.toml`

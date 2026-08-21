@@ -17,8 +17,8 @@
 ## Verify
 
 ```bash
-lspee --help
-lspee status --output json
+monokit --help
+monokit status --output json
 ```
 
 `status` auto-starts daemon by default when missing.

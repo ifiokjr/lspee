@@ -1,24 +1,26 @@
 [workspace]
 members = [
-	"crates/lspee",
-	"crates/lspee_cli",
-	"crates/lspee_config",
-	"crates/lspee_daemon",
-	"crates/lspee_lsp",
-	"crates/lspee_mcp",
-	"crates/lspee_protocol",
+	"crates/monokit",
+	"crates/monokit_cli",
+	"crates/monokit_config",
+	"crates/monokit_daemon",
+	"crates/monokit_lsp",
+	"crates/monokit_mcp",
+	"crates/monokit_protocol",
+	"crates/monokit_summary",
+	"crates/monokit_tests",
 ]
-exclude = ["testing/lspee_test_helpers"]
+exclude = ["testing/monokit_test_helpers"]
 resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
 authors = ["Ifiok Jr. <ifiokjr@users.noreply.github.com>"]
-documentation = "https://docs.rs/lspee"
+documentation = "https://docs.rs/monokit"
 edition = "2024"
-homepage = "https://ifiokjr.github.io/lspee/"
+homepage = "https://ifiokjr.github.io/monokit/"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/ifiokjr/lspee"
+repository = "https://github.com/ifiokjr/monokit"
 rust-version = "1.88.0"
 
 [workspace.dependencies]

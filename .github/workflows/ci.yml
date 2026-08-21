@@ -118,7 +118,7 @@ jobs:
         with:
           files: lcov.info
           flags: rust
-          name: lspee-rust-workspace
+          name: monokit-rust-workspace
           fail_ci_if_error: false
 
   security:

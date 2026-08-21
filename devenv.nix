@@ -92,30 +92,7 @@ in
         pass_filenames = true;
         name = "conventional commits";
         description = "Validate commit message follows Conventional Commits format.";
-        entry = ''
-          ${pkgs.python3}/bin/python3 << 'PYEOF'
-          import re
-          import sys
-
-          # Conventional commit pattern
-          # type(scope): description
-          pattern = r"^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z-]+\))?: .+"
-
-          commit_msg_file = sys.argv[1] if len(sys.argv) > 1 else None
-          if commit_msg_file:
-              with open(commit_msg_file, 'r') as f:
-                  msg = f.read()
-              if re.match(pattern, msg):
-                  sys.exit(0)
-              else:
-                  print("Error: Commit message does not follow Conventional Commits format.")
-                  print("Expected format: type(scope): description")
-                  print("Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert")
-                  print("Example: feat(daemon): add memory eviction support")
-                  sys.exit(1)
-          sys.exit(0)
-          PYEOF
-        '';
+        entry = "${pkgs.python3}/bin/python3 ${./scripts/git-hooks/conventional_commit.py}";
         stages = [ "commit-msg" ];
       };
     };

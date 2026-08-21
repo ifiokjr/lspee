@@ -77,8 +77,8 @@ jobs:
       - name: upload binaries
         uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: lspee
-          manifest-path: crates/lspee_cli/Cargo.toml
+          bin: monokit
+          manifest-path: crates/monokit_cli/Cargo.toml
           ref: refs/tags/${{ env.RELEASE_TAG }}
           archive: $bin-$target-$tag
           target: ${{ matrix.target }}

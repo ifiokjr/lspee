@@ -1,11 +1,11 @@
 ```bash
-git clone https://github.com/ifiokjr/lspee.git
-cd lspee
-cargo build --release -p lspee_cli
+git clone https://github.com/ifiokjr/monokit.git
+cd monokit
+cargo build --release -p monokit_cli
 ```
 
 Binary path:
 
 ```text
-target/release/lspee
+target/release/monokit
 ```

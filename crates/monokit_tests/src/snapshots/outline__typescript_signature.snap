@@ -1,0 +1,72 @@
+---
+source: crates/monokit_tests/src/outline.rs
+expression: output
+---
+--- example.ts ---
+L  10  Interface ProcessorConfig interface ProcessorConfig {
+  /** Number of worker threads. */
+  threads: number;
+  /** Whether to enable debug logging. */
+  verbose: boolean;
+  /** Maximum retries on failure. */
+  maxRetries?: number;
+} // Configuration for the processor. */
+L  20  TypeAlias ProcessResult type ProcessResult<T> = {
+  ok: true;
+  data: T;
+} | {
+  ok: false;
+  error: string;
+}; // A processing result containing output data. */
+L  29      Class JobStatus enum JobStatus {
+  Pending = "pending",
+  Running = "running",
+  Done = "done",
+  Failed = "failed",
+} // Status of a processing job. */
+L  37      Class WorkerPool class WorkerPool {
+  private workers: ProcessorConfig[];
+  private active: number;
+
+  /** Create a new worker pool with the given configuration. */
+  constructor(config: ProcessorConfig) {
+    this.workers = [config];
+    this.active = 0;
+  }
+
+  /** Submit a job to the pool for processing. */
+  process<T>(input: T): ProcessResult<T> {
+    if (this.active >= this.workers.length) {
+      return { ok: false, error: "pool full" };
+    }
+    this.active++;
+    return { ok: true, data: input };
+  }
+
+  /** Shut down all workers. */
+  shutdown(): void {
+    this.active = 0;
+  }
+} // Manages a pool of processing workers. */
+L  42   Function constructor constructor(config: ProcessorConfig) {
+    this.workers = [config];
+    this.active = 0;
+  } // Create a new worker pool with the given configuration. */
+L  48   Function process process<T>(input: T): ProcessResult<T> {
+    if (this.active >= this.workers.length) {
+      return { ok: false, error: "pool full" };
+    }
+    this.active++;
+    return { ok: true, data: input };
+  } // Submit a job to the pool for processing. */
+L  57   Function shutdown shutdown(): void {
+    this.active = 0;
+  } // Shut down all workers. */
+L  63   Function parseJson function parseJson<T>(input: string): ProcessResult<T> {
+  try {
+    const data = JSON.parse(input) as T;
+    return { ok: true, data };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+} // Parse a JSON string into a typed result. */

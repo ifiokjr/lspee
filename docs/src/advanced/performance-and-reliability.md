@@ -10,11 +10,11 @@
 
 - Use `--output json` in automation and parse robustly.
 - Always release leases (CLI does this automatically).
-- Use `lspee restart` after environment/path changes.
+- Use `monokit restart` after environment/path changes.
 
 ## Observability
 
-`lspee status --output json` exposes counters:
+`monokit status --output json` exposes counters:
 
 - sessions spawned/reused
 - idle evictions

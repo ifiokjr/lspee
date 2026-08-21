@@ -2,7 +2,7 @@
 
 ## Version policy
 
-`lspee` follows SemVer:
+`monokit` follows SemVer:
 
 - MAJOR: breaking CLI/protocol/config changes
 - MINOR: backward-compatible features
@@ -26,8 +26,8 @@ cargo test
 
 ## Packaging notes
 
-- CLI package: `lspee_cli` (installs `lspee` binary)
-- reservation package: `lspee`
+- CLI package: `monokit_cli` (installs `monokit` binary)
+- reservation package: `monokit`
 
 ## CI
 

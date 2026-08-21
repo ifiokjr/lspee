@@ -6,7 +6,7 @@
 - ✅ macOS
 - ❌ Windows (named pipe transport not implemented yet)
 
-`lspee` currently uses Unix domain sockets (`tokio::net::UnixListener`/`UnixStream`) and emits a clear compile-time error on unsupported platforms.
+`monokit` currently uses Unix domain sockets (`tokio::net::UnixListener`/`UnixStream`) and emits a clear compile-time error on unsupported platforms.
 
 ## Platform-specific daemon behavior
 

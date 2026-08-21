@@ -1,4 +1,4 @@
-# Lspee Daemon Wire Protocol (Control + Stream)
+# Monokit Daemon Wire Protocol (Control + Stream)
 
 ## Status
 
@@ -63,7 +63,7 @@ Fields:
 
 ## Control Message Types
 
-Implementation note: canonical serde wire structs and protocol constants for control messages live in `crates/lspee_protocol/src/lib.rs`.
+Implementation note: canonical serde wire structs and protocol constants for control messages live in `crates/monokit_protocol/src/lib.rs`.
 
 ## 1) Attach (request)
 
@@ -81,7 +81,7 @@ Implementation note: canonical serde wire structs and protocol constants for con
 			"lsp_id": "rust-analyzer"
 		},
 		"client_meta": {
-			"client_name": "lspee",
+			"client_name": "monokit",
 			"client_version": "0.4.0",
 			"pid": 81234,
 			"cwd": "/repo/app"
@@ -114,7 +114,7 @@ Validation:
 		"session_id": "sess_01JX...",
 		"stream": {
 			"mode": "dedicated",
-			"endpoint": "unix:///run/user/1000/lspee/stream/lease_01JX.sock"
+			"endpoint": "unix:///run/user/1000/monokit/stream/lease_01JX.sock"
 		},
 		"server": {
 			"state": "Ready",
@@ -376,8 +376,8 @@ Frame fields:
 ```json
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$id": "https://lspee.dev/schemas/daemon-control-v1.json",
-	"title": "Lspee Daemon Control Message v1",
+	"$id": "https://monokit.dev/schemas/daemon-control-v1.json",
+	"title": "Monokit Daemon Control Message v1",
 	"type": "object",
 	"required": ["v", "type", "payload"],
 	"properties": {

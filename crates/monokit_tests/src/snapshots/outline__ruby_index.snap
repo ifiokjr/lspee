@@ -1,0 +1,5 @@
+---
+source: crates/monokit_tests/src/outline.rs
+expression: output
+---
+example.rb: Config, initialize, ParseError, initialize, Parser, parse, format_node

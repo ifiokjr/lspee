@@ -9,19 +9,19 @@ For full user-facing docs, see the mdBook pages:
 
 ## Current implementation
 
-- Built-in catalog source: `crates/lspee_config/defaults/languages.toml`
+- Built-in catalog source: `crates/monokit_config/defaults/languages.toml`
 - Catalog shape: `[lsp."<id>"]` tables (Helix-inspired)
 - Seed size: 100 entries
 - Used by:
-  - `lspee lsps --file ...`
-  - daemon runtime fallback for `lspee call --lsp <id>`
+  - `monokit lsps --file ...`
+  - daemon runtime fallback for `monokit call --lsp <id>`
 
 ## Override path (implemented)
 
 Layered config can override LSP entries via `[[lsp]]` in:
 
-1. `~/.config/lspee/config.toml`
-2. `<project_root>/lspee.toml`
+1. `~/.config/monokit/config.toml`
+2. `<project_root>/monokit.toml`
 
 Example:
 

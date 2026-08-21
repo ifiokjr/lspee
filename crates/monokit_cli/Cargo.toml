@@ -1,0 +1,47 @@
+[package]
+name = "monokit_cli"
+version.workspace = true
+documentation.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+name = "monokit_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "monokit"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true, default-features = true }
+clap = { workspace = true, default-features = true, features = ["derive", "env"] }
+monokit_config = { path = "../monokit_config" }
+monokit_daemon = { path = "../monokit_daemon" }
+monokit_lsp = { path = "../monokit_lsp" }
+monokit_mcp = { path = "../monokit_mcp" }
+rmcp = { version = "1.4", features = ["server", "transport-io"] }
+serde = { workspace = true, default-features = true, features = ["derive"] }
+serde_json = { workspace = true, default-features = true }
+tokio = { workspace = true, default-features = true, features = ["rt-multi-thread", "macros", "sync", "time", "io-util", "io-std", "net", "fs", "process"] }
+toml = { workspace = true, default-features = true }
+toml_edit = { workspace = true, default-features = true }
+tracing = { workspace = true, default-features = true }
+tracing-subscriber = { workspace = true, default-features = true, features = ["json", "env-filter"] }
+url = { workspace = true, default-features = true }
+
+[dev-dependencies]
+clap = { workspace = true, default-features = true }
+insta = { workspace = true, default-features = true, features = ["json", "redactions", "filters"] }
+monokit_config = { path = "../monokit_config" }
+monokit_daemon = { path = "../monokit_daemon" }
+monokit_test_helpers = { path = "../../testing/monokit_test_helpers" }
+serde_json = { workspace = true, default-features = true }
+tempfile = "3"
+tokio = { workspace = true, default-features = true, features = ["test-util"] }

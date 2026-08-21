@@ -1,0 +1,52 @@
+---
+source: crates/monokit_tests/src/outline.rs
+expression: output
+---
+--- example.java ---
+L  14      Class Config public class Config {
+    /** Whether verbose logging is enabled. */
+    public boolean verbose;
+    /** Maximum depth for recursive parsing. */
+    public int maxDepth;
+
+    /** Creates a new configuration with default settings. */
+    public Config() {
+        this.verbose = false;
+        this.maxDepth = 10;
+    }
+}
+L  21   Function Config public Config() {
+        this.verbose = false;
+        this.maxDepth = 10;
+    } // Creates a new configuration with default settings. */
+L  30      Class ParseError public class ParseError extends Exception {
+    /** Byte position where the error occurred. */
+    public int position;
+
+    /** Creates a parse error with a message and position. */
+    public ParseError(String message, int position) {
+        super(message);
+        this.position = position;
+    }
+}
+L  35   Function ParseError public ParseError(String message, int position) {
+        super(message);
+        this.position = position;
+    } // Creates a parse error with a message and position. */
+L  44  Interface Parseable public interface Parseable {
+    /** Parse the given input string. */
+    Ast parse(String input) throws ParseError;
+}
+L  46   Function parse Ast parse(String input) throws ParseError; // Parse the given input string. */
+L  52      Class Ast public class Ast {
+    /** The root node of the tree. */
+    public Node root;
+
+    /** Create an AST with the given root. */
+    public Ast(Node root) {
+        this.root = root;
+    }
+}
+L  57   Function Ast public Ast(Node root) {
+        this.root = root;
+    } // Create an AST with the given root. */

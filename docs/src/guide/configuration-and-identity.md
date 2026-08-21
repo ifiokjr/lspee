@@ -8,7 +8,7 @@ Lowest to highest precedence:
 
 ## Session identity
 
-`lspee` computes:
+`monokit` computes:
 
 {{#include ../includes/session-key.md}}
 
@@ -23,7 +23,7 @@ This enables safe multiplexing for many agents in one codebase.
 
 ## Runtime command resolution
 
-For `lspee call --lsp <id>` daemon resolves command/args in this order:
+For `monokit call --lsp <id>` daemon resolves command/args in this order:
 
 1. explicit project/user config for the same `lsp.id`
 2. Helix-inspired default catalog (`defaults/languages.toml`)

@@ -2,11 +2,11 @@
 authors = ["Ifiok Jr."]
 language = "en"
 src = "src"
-title = "lspee Book"
+title = "monokit Book"
 
 [output.html]
 default-theme = "ayu"
 preferred-dark-theme = "ayu"
-site-url = "/lspee/"
-git-repository-url = "https://github.com/ifiokjr/lspee"
-edit-url-template = "https://github.com/ifiokjr/lspee/edit/main/docs/{path}"
+site-url = "/monokit/"
+git-repository-url = "https://github.com/ifiokjr/monokit"
+edit-url-template = "https://github.com/ifiokjr/monokit/edit/main/docs/{path}"

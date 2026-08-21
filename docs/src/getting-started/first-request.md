@@ -20,7 +20,7 @@ Create `request.json`:
 ## Run call
 
 ```bash
-lspee call --lsp rust-analyzer --request @request.json --output json
+monokit call --lsp rust-analyzer --request @request.json --output json
 ```
 
 ## What happens internally

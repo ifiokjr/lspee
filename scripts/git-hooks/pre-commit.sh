@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "${LSPEE_GIT_HOOK_IN_DEVENV:-0}" != "1" ]]; then
-	exec devenv shell -- env LSPEE_GIT_HOOK_IN_DEVENV=1 bash "$0" "$@"
+if [[ "${MONOKIT_GIT_HOOK_IN_DEVENV:-0}" != "1" ]]; then
+	exec devenv shell -- env MONOKIT_GIT_HOOK_IN_DEVENV=1 bash "$0" "$@"
 fi
 
 ROOT=$(git rev-parse --show-toplevel)

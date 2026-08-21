@@ -1,6 +1,6 @@
 # Daemon Internals
 
-This chapter explains how the lspee daemon stays alive after the CLI exits, how it detaches from the terminal, and how subsequent CLI invocations reconnect to the same daemon. Understanding these mechanics helps with debugging, deployment, and reasoning about resource lifetime.
+This chapter explains how the monokit daemon stays alive after the CLI exits, how it detaches from the terminal, and how subsequent CLI invocations reconnect to the same daemon. Understanding these mechanics helps with debugging, deployment, and reasoning about resource lifetime.
 
 ## How the daemon is spawned
 
@@ -38,19 +38,19 @@ When a session has no active leases and exceeds the idle TTL (default: 300 secon
 
 The mechanisms described above live in these files:
 
-| File                                      | What it owns                                                              |
-| ----------------------------------------- | ------------------------------------------------------------------------- |
-| `crates/lspee_cli/src/commands/client.rs` | `spawn_daemon()`, `connect()`, auto-start retry loop                      |
-| `crates/lspee_daemon/src/lib.rs`          | `Daemon::run()` event loop, control connection handler, session bootstrap |
-| `crates/lspee_daemon/src/registry.rs`     | `SessionRegistry`, `acquire_or_spawn()` singleflight, lease tracking      |
-| `crates/lspee_daemon/src/eviction.rs`     | `EvictionLoop`, idle session cleanup, daemon auto-shutdown                |
-| `crates/lspee_daemon/src/memory.rs`       | `MemoryMonitor`, RSS sampling, budget enforcement                         |
-| `crates/lspee_daemon/src/stream.rs`       | Dedicated stream endpoints for editor proxies                             |
-| `crates/lspee_lsp/src/lib.rs`             | `LspTransport::spawn()`, `LspRuntime`, LSP stdio framing                  |
+| File                                        | What it owns                                                              |
+| ------------------------------------------- | ------------------------------------------------------------------------- |
+| `crates/monokit_cli/src/commands/client.rs` | `spawn_daemon()`, `connect()`, auto-start retry loop                      |
+| `crates/monokit_daemon/src/lib.rs`          | `Daemon::run()` event loop, control connection handler, session bootstrap |
+| `crates/monokit_daemon/src/registry.rs`     | `SessionRegistry`, `acquire_or_spawn()` singleflight, lease tracking      |
+| `crates/monokit_daemon/src/eviction.rs`     | `EvictionLoop`, idle session cleanup, daemon auto-shutdown                |
+| `crates/monokit_daemon/src/memory.rs`       | `MemoryMonitor`, RSS sampling, budget enforcement                         |
+| `crates/monokit_daemon/src/stream.rs`       | Dedicated stream endpoints for editor proxies                             |
+| `crates/monokit_lsp/src/lib.rs`             | `LspTransport::spawn()`, `LspRuntime`, LSP stdio framing                  |
 
 ## Integration tests
 
-These behaviors are verified by integration tests in [`crates/lspee_daemon/tests/control_ipc.rs`](https://github.com/ifiokjr/lspee/blob/main/crates/lspee_daemon/tests/control_ipc.rs):
+These behaviors are verified by integration tests in [`crates/monokit_daemon/tests/control_ipc.rs`](https://github.com/ifiokjr/monokit/blob/main/crates/monokit_daemon/tests/control_ipc.rs):
 
 | Test                                              | What it verifies                                                        |
 | ------------------------------------------------- | ----------------------------------------------------------------------- |

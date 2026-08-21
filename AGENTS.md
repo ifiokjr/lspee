@@ -1,6 +1,6 @@
 # AGENTS.md
 
-lspee is an agent-first LSP multiplexer for fast, shared, per-workspace language-server access. Agents are the primary users; human developers are secondary.
+monokit is an agent-first LSP multiplexer for fast, shared, per-workspace language-server access. Agents are the primary users; human developers are secondary.
 
 ## Essentials
 
@@ -17,12 +17,12 @@ lspee is an agent-first LSP multiplexer for fast, shared, per-workspace language
 
 ## Naming convention
 
-- The project name is always written in **all lowercase**: `lspee`.
-- Never use `Lspee`, `LSPEE`, or `LsPee` in prose, docs, comments, or string literals.
+- The project name is always written in **all lowercase**: `monokit`.
+- Never use `Monokit`, `MONOKIT`, or `MonoKit` in prose, docs, comments, or string literals.
 - **Rust code exception**: standard Rust naming conventions apply.
-  - Structs and enums may use PascalCase (e.g. `LspeeConfig`).
-  - Constants use UPPER_SNAKE_CASE (e.g. `LSPEE_VERSION`).
-  - Variables and functions use snake_case (e.g. `lspee_config`).
+  - Structs and enums may use PascalCase (e.g. `MonokitConfig`).
+  - Constants use UPPER_SNAKE_CASE (e.g. `MONOKIT_VERSION`).
+  - Variables and functions use snake_case (e.g. `monokit_config`).
 
 ## Git rules
 
@@ -36,7 +36,7 @@ lspee is an agent-first LSP multiplexer for fast, shared, per-workspace language
 - **Issues**:
   - Use sentence case without a full stop at the end (e.g., "Add support for workspace symbols", "Fix memory leak in daemon").
   - Keep titles short enough to fit on one line.
-  - Use backticks for code references when helpful (e.g., "`lspee do` should support multiple files").
+  - Use backticks for code references when helpful (e.g., "`monokit do` should support multiple files").
 
 - **Pull Requests**:
   - Must use Conventional Commits syntax for the PR title (e.g., `feat: add hover support`, `refactor: simplify session registry`).
@@ -53,12 +53,12 @@ lspee is an agent-first LSP multiplexer for fast, shared, per-workspace language
 
 The workspace is organized into six crates under `crates/`:
 
-- `lspee` - Reserved crate name (minimal API)
-- `lspee_cli` - CLI binary (`lspee` command)
-- `lspee_config` - Configuration loading, merging, and language registry
-- `lspee_daemon` - Daemon process, session orchestration, eviction, memory management
-- `lspee_lsp` - JSON-RPC/LSP process transport
-- `lspee_protocol` - IPC wire models (control envelopes, stream frames)
+- `monokit` - Reserved crate name (minimal API)
+- `monokit_cli` - CLI binary (`monokit` command)
+- `monokit_config` - Configuration loading, merging, and language registry
+- `monokit_daemon` - Daemon process, session orchestration, eviction, memory management
+- `monokit_lsp` - JSON-RPC/LSP process transport
+- `monokit_protocol` - IPC wire models (control envelopes, stream frames)
 
 ## Available commands
 
@@ -85,10 +85,10 @@ All commands are available as devenv scripts. Run them inside `devenv shell` or 
 
 ## NPM package publishing
 
-The `@ifi/lspee` npm package provides cross-platform binary distribution:
+The `@ifi/monokit` npm package provides cross-platform binary distribution:
 
-- Platform packages: `@ifi/lspee-darwin-arm64`, `@ifi/lspee-darwin-x64`, `@ifi/lspee-linux-arm64-gnu`, etc.
-- Root package: `@ifi/lspee` (auto-selects correct platform binary)
-- Skill package: `@ifi/lspee-skill`
+- Platform packages: `@ifi/monokit-darwin-arm64`, `@ifi/monokit-darwin-x64`, `@ifi/monokit-linux-arm64-gnu`, etc.
+- Root package: `@ifi/monokit` (auto-selects correct platform binary)
+- Skill package: `@ifi/monokit-skill`
 
 Publishing is automated via the `release` and `npm-publish` GitHub workflows.

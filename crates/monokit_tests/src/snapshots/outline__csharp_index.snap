@@ -1,0 +1,5 @@
+---
+source: crates/monokit_tests/src/outline.rs
+expression: output
+---
+example.cs: Parser, Constants, Config, ParseError, IParseable, Parse, Ast

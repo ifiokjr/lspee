@@ -1,0 +1,5 @@
+---
+source: crates/monokit_tests/src/outline.rs
+expression: output
+---
+example.py: Config, __init__, ParseError, __init__, Ast, __init__, line_at, parse, format_node

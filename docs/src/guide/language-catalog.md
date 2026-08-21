@@ -1,6 +1,6 @@
 # Language Catalog (Top 100 Defaults)
 
-`lspee` ships with a Helix-inspired default LSP catalog at:
+`monokit` ships with a Helix-inspired default LSP catalog at:
 
 - {{#include ../includes/catalog-path.md}}
 
@@ -16,12 +16,12 @@ Current seed size: **100 LSP definitions**.
 ## Query by file
 
 ```bash
-lspee lsps --file src/main.rs --output json
+monokit lsps --file src/main.rs --output json
 ```
 
 ## Override behavior
 
-You can override command/args through layered config (`config.toml` / `lspee.toml`) via `[[lsp]]`.
+You can override command/args through layered config (`config.toml` / `monokit.toml`) via `[[lsp]]`.
 
 Example:
 

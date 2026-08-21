@@ -1,8 +1,8 @@
-# lspee Architecture
+# monokit Architecture
 
 ## Purpose
 
-`lspee` is a local LSP broker that multiplexes shared LSP runtimes across callers.
+`monokit` is a local LSP broker that multiplexes shared LSP runtimes across callers.
 
 It keeps expensive language servers warm and lets humans/agents make synchronous request/response calls through a lightweight CLI.
 
@@ -15,33 +15,33 @@ It keeps expensive language servers warm and lets humans/agents make synchronous
 
 ## Components
 
-### `lspee_cli`
+### `monokit_cli`
 
 - resolves project/config identity
 - auto-starts daemon when needed (`status`, `call`)
 - performs `Attach` / `Call` / `Release` / `Stats` / `Shutdown`
 - supports human + JSON outputs
 
-### `lspee_daemon`
+### `monokit_daemon`
 
 - serves NDJSON control protocol over local socket
 - manages session registry and lease lifecycle
-- spawns session runtimes via `lspee_lsp`
+- spawns session runtimes via `monokit_lsp`
 - evicts idle sessions and handles graceful shutdown
 
-### `lspee_lsp`
+### `monokit_lsp`
 
 - launches LSP subprocesses
 - handles JSON-RPC framing (`Content-Length`)
 - matches requests to responses by `id`
 
-### `lspee_config`
+### `monokit_config`
 
 - merges default + user + project config
 - computes deterministic config hash
 - exposes Helix-inspired top-100 LSP catalog
 
-### `lspee_protocol`
+### `monokit_protocol`
 
 - canonical control message structs/constants
 - shared by CLI and daemon
@@ -51,7 +51,7 @@ It keeps expensive language servers warm and lets humans/agents make synchronous
 Transport: NDJSON over Unix socket at:
 
 ```text
-<project_root>/.lspee/daemon.sock
+<project_root>/.monokit/daemon.sock
 ```
 
 Primary request types:

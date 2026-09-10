@@ -490,25 +490,30 @@ check_interval_ms = 25
 	let mut saw_eviction = false;
 
 	for _ in 0..100 {
-		if let Some(line) = stream_lines
-			.next_line()
+		// Bound each read so a missed eviction fails the test instead of
+		// hanging the runner when eviction checks starve under load.
+		let line = tokio::time::timeout(Duration::from_secs(30), stream_lines.next_line())
 			.await
-			.expect("stream read should succeed")
-		{
-			let response: lspee_daemon::StreamFrame<Value> =
-				serde_json::from_str(&line).expect("stream response should decode");
+			.expect("eviction stream frame should arrive within 30s")
+			.expect("stream read should succeed");
 
-			if matches!(
-				response.frame_type,
-				lspee_daemon::StreamFrameType::StreamError
-			) {
-				saw_eviction = true;
-				assert_eq!(
-					response.payload["code"],
-					lspee_daemon::ERROR_SESSION_EVICTED_MEMORY
-				);
-				break;
-			}
+		let Some(line) = line else {
+			break;
+		};
+
+		let response: lspee_daemon::StreamFrame<Value> =
+			serde_json::from_str(&line).expect("stream response should decode");
+
+		if matches!(
+			response.frame_type,
+			lspee_daemon::StreamFrameType::StreamError
+		) {
+			saw_eviction = true;
+			assert_eq!(
+				response.payload["code"],
+				lspee_daemon::ERROR_SESSION_EVICTED_MEMORY
+			);
+			break;
 		}
 	}
 

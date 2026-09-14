@@ -15,20 +15,20 @@ runs:
     - name: cache rust dependencies
       id: cache-rust-dependencies
       continue-on-error: true
-      uses: Swatinem/rust-cache@v2
+      uses: Swatinem/rust-cache@v2.9.2 # v2
       with:
         prefix-key: "${{ inputs.cache-version }}"
 
     - name: retry cache rust dependencies
       if: steps.cache-rust-dependencies.outcome != 'success'
-      uses: Swatinem/rust-cache@v2
+      uses: Swatinem/rust-cache@v2.9.2 # v2
       with:
         prefix-key: "${{ inputs.cache-version }}"
 
     - name: cache cargo binaries
       id: cache-cargo-binaries
       continue-on-error: true
-      uses: actions/cache@v5
+      uses: actions/cache@v5.1.0 # v5
       with:
         path: ./.bin
         key: ${{ runner.os }}-cargo-bin-${{ inputs.cache-version }}-${{ env.RUSTUP_TOOLCHAIN }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.toml') }}
@@ -37,7 +37,7 @@ runs:
 
     - name: retry cache cargo binaries
       if: steps.cache-cargo-binaries.outcome != 'success'
-      uses: actions/cache@v5
+      uses: actions/cache@v5.1.0 # v5
       with:
         path: ./.bin
         key: ${{ runner.os }}-cargo-bin-${{ inputs.cache-version }}-${{ env.RUSTUP_TOOLCHAIN }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.toml') }}
@@ -47,13 +47,13 @@ runs:
     - name: install nix
       id: install-nix
       continue-on-error: true
-      uses: cachix/install-nix-action@v31
+      uses: cachix/install-nix-action@v31.11.1 # v31
       with:
         github_access_token: ${{ inputs.github-token }}
 
     - name: retry install nix
       if: steps.install-nix.outcome != 'success'
-      uses: cachix/install-nix-action@v31
+      uses: cachix/install-nix-action@v31.11.1 # v31
       with:
         github_access_token: ${{ inputs.github-token }}
 

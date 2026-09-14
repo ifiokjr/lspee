@@ -25,7 +25,7 @@ jobs:
       id-token: write
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.4.0 # v4
 
       - name: setup
         uses: ./.github/actions/devenv
@@ -37,7 +37,7 @@ jobs:
         shell: devenv shell -- bash -e {0}
 
       - name: upload lcov artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2 # v4
         with:
           name: lcov
           path: lcov.info
@@ -45,7 +45,7 @@ jobs:
 
       - name: upload to codecov
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v5.5.5 # v5
         with:
           files: ./lcov.info
           use_oidc: true

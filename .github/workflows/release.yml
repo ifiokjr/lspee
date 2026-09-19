@@ -50,7 +50,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: checkout
-        uses: actions/checkout@v7.0.1 # v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.RELEASE_TAG }}
 
@@ -58,13 +58,13 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: setup cross toolchain
-        uses: taiki-e/setup-cross-toolchain-action@v1.42.0 # v1
+        uses: taiki-e/setup-cross-toolchain-action@12b7ad4acfa95a1476779d6c06699b96ec1691f8 # v1.42.0
         with:
           target: ${{ matrix.target }}
         if: startsWith(matrix.os, 'ubuntu') && !contains(matrix.target, '-musl')
 
       - name: install cross
-        uses: taiki-e/install-action@v2.87.14 # v2
+        uses: taiki-e/install-action@76c2e6406e52637deed7160d77bded76bd83e06e # v2.87.14
         with:
           tool: cross
         if: contains(matrix.target, '-musl')
@@ -75,7 +75,7 @@ jobs:
         if: endsWith(matrix.target, 'windows-msvc')
 
       - name: upload binaries
-        uses: taiki-e/upload-rust-binary-action@v1.30.2 # v1
+        uses: taiki-e/upload-rust-binary-action@f0d45ae91ee7b8ee928de7a9d04d893a08bcbec6 # v1.30.2
         with:
           bin: lspee
           manifest-path: crates/lspee_cli/Cargo.toml
@@ -103,7 +103,7 @@ jobs:
           printf '%s\n' "$RELEASE_TAG" > "$RUNNER_TEMP/npm-publish-metadata/release-tag.txt"
 
       - name: upload npm publish metadata
-        uses: actions/upload-artifact@v7.0.1 # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: npm-publish-metadata
           path: ${{ runner.temp }}/npm-publish-metadata/release-tag.txt

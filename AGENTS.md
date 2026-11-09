@@ -6,6 +6,7 @@ lspee is an agent-first LSP multiplexer for fast, shared, per-workspace language
 
 - Package manager: Cargo.
 - Enter the dev environment with `devenv shell` before running repo commands.
+- Cursor cloud agents get single-user Nix and devenv from `.cursor/install.sh`, with the devenv and nix-community binary caches. Run repo commands with `devenv shell -- build:all`, `devenv shell -- lint:all`, and `devenv shell -- test:all`.
 - Preferred repo commands:
   - `build:all`
   - `test:all`

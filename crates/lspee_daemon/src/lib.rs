@@ -334,7 +334,7 @@ async fn dispatch_attach(
 				let runtime = Arc::new(transport.spawn(&lsp_config).await?);
 				let initialize_result =
 					bootstrap_lsp_session(&runtime, &spawn_root, &lsp_config).await?;
-				let (events, _) = tokio::sync::broadcast::channel(32);
+				let (events, _) = watch::channel(None);
 
 				Ok(SessionHandle {
 					key: spawn_key,

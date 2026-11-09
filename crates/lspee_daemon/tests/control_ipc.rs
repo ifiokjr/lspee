@@ -35,7 +35,9 @@ use tokio::io::AsyncWriteExt;
 use tokio::io::BufReader;
 use tokio::net::UnixStream;
 use tokio::task::JoinHandle;
+use tokio::time::Instant;
 use tokio::time::sleep;
+use tokio::time::timeout;
 
 fn unique_temp_dir(name: &str) -> PathBuf {
 	let nanos = SystemTime::now()
@@ -483,36 +485,52 @@ check_interval_ms = 25
 		.trim_start_matches("unix://")
 		.to_string();
 
+	// Connect only after the daemon has published the eviction. The notice is
+	// sent before the client accepts the dedicated socket, which is the race
+	// that hung CI when the broadcast had no receiver yet.
+	let deadline = Instant::now() + Duration::from_secs(5);
+	loop {
+		let stats = request(
+			&mut writer,
+			&mut lines,
+			"stats-memory",
+			TYPE_STATS,
+			serde_json::to_value(Stats::default()).expect("stats payload should serialize"),
+		)
+		.await;
+		let evicted = stats.payload["counters"]["sessions_evicted_memory_total"]
+			.as_u64()
+			.unwrap_or(0);
+		if evicted >= 1 {
+			break;
+		}
+		assert!(
+			Instant::now() < deadline,
+			"daemon did not record a memory eviction"
+		);
+		sleep(Duration::from_millis(20)).await;
+	}
+
 	let stream = connect_with_retry(Path::new(&endpoint)).await;
 	let (stream_reader, _stream_writer) = stream.into_split();
 	let mut stream_lines = BufReader::new(stream_reader).lines();
 
-	let mut saw_eviction = false;
+	let line = timeout(Duration::from_secs(2), stream_lines.next_line())
+		.await
+		.expect("eviction notice should reach a client that connects after it is published")
+		.expect("stream read should succeed")
+		.expect("dedicated stream should emit the eviction error");
+	let response: lspee_daemon::StreamFrame<Value> =
+		serde_json::from_str(&line).expect("stream response should decode");
 
-	for _ in 0..100 {
-		if let Some(line) = stream_lines
-			.next_line()
-			.await
-			.expect("stream read should succeed")
-		{
-			let response: lspee_daemon::StreamFrame<Value> =
-				serde_json::from_str(&line).expect("stream response should decode");
-
-			if matches!(
-				response.frame_type,
-				lspee_daemon::StreamFrameType::StreamError
-			) {
-				saw_eviction = true;
-				assert_eq!(
-					response.payload["code"],
-					lspee_daemon::ERROR_SESSION_EVICTED_MEMORY
-				);
-				break;
-			}
-		}
-	}
-
-	assert!(saw_eviction, "expected memory eviction stream error");
+	assert!(matches!(
+		response.frame_type,
+		lspee_daemon::StreamFrameType::StreamError
+	));
+	assert_eq!(
+		response.payload["code"],
+		lspee_daemon::ERROR_SESSION_EVICTED_MEMORY
+	);
 
 	shutdown_daemon(&mut writer, &mut lines).await;
 
@@ -622,7 +640,7 @@ daemon_idle_ttl_secs = 2
 	drop(lines);
 
 	// Wait for session eviction (1s) + daemon idle TTL (2s) + margin.
-	let result = tokio::time::timeout(Duration::from_secs(8), daemon_task).await;
+	let result = timeout(Duration::from_secs(8), daemon_task).await;
 	assert!(
 		result.is_ok(),
 		"daemon should have auto-shut down within the timeout"

@@ -6,6 +6,7 @@ lspee is an agent-first LSP multiplexer for fast, shared, per-workspace language
 
 - Package manager: Cargo.
 - Enter the dev environment with `devenv shell` before running repo commands.
+- Cursor cloud agents do not use devenv. `.cursor/install.sh` puts Rust 1.88.0, nightly `rustfmt`, `dprint`, `shfmt`, `nixfmt`, and the pinned `cargo bin` tools on `PATH`. In that environment run `cargo build --workspace --locked`, `cargo clippy --workspace --all-targets -- -D warnings`, `dprint check`, `cargo deny check`, `cargo nextest run --workspace`, and `cargo test --workspace --doc`.
 - Preferred repo commands:
   - `build:all`
   - `test:all`

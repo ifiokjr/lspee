@@ -128,22 +128,22 @@ async fn run_stream_connection(
 			let seq = 1_u64;
 
 			loop {
-				match event_rx.recv().await {
-					Ok(payload) => {
-						let frame = crate::protocol::StreamFrame {
-							v: crate::PROTOCOL_VERSION,
-							frame_type: crate::protocol::StreamFrameType::StreamError,
-							lease_id: lease_id.clone(),
-							seq,
-							payload,
-						};
+				let pending = event_rx.borrow_and_update().clone();
+				if let Some(payload) = pending {
+					let frame = crate::protocol::StreamFrame {
+						v: crate::PROTOCOL_VERSION,
+						frame_type: crate::protocol::StreamFrameType::StreamError,
+						lease_id: lease_id.clone(),
+						seq,
+						payload,
+					};
 
-						outbound_tx.send(serde_json::to_vec(&frame)?).await?;
+					outbound_tx.send(serde_json::to_vec(&frame)?).await?;
+					break;
+				}
 
-						break;
-					}
-					Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {}
-					Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+				if event_rx.changed().await.is_err() {
+					break;
 				}
 			}
 

@@ -16,7 +16,7 @@ use serde_json::Value;
 use tokio::sync::Mutex;
 use tokio::sync::Notify;
 use tokio::sync::RwLock;
-use tokio::sync::broadcast;
+use tokio::sync::watch;
 use tracing::instrument;
 
 const DEFAULT_IDLE_TTL: Duration = Duration::from_secs(300);
@@ -49,7 +49,7 @@ pub struct SessionHandle {
 	pub transport: Arc<lspee_lsp::LspTransport>,
 	pub runtime: Arc<lspee_lsp::LspRuntime>,
 	pub initialize_result: Value,
-	pub events: broadcast::Sender<StreamErrorPayload>,
+	pub events: watch::Sender<Option<StreamErrorPayload>>,
 }
 
 impl std::fmt::Debug for SessionHandle {
@@ -605,7 +605,7 @@ mod tests {
 			initialization_options: BTreeMap::new(),
 		};
 		let runtime = Arc::new(transport.spawn(&lsp).await.expect("spawn cat"));
-		let (events, _) = broadcast::channel(4);
+		let (events, _) = watch::channel(None);
 		SessionHandle {
 			key,
 			transport,

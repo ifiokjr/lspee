@@ -14,7 +14,7 @@
 
 ## Sampling
 
-Current implementation samples RSS via `ps -o rss= -p <pid>` on Unix-like platforms.
+On Linux, RSS is read from `VmRSS` in `/proc/<pid>/status`. Other Unix platforms fall back to `ps -o rss= -p <pid>`.
 
 ## Eviction policy
 
@@ -30,7 +30,7 @@ Current policy is **idle LRU with editor protection bias**:
 When a session is evicted for memory pressure:
 
 - agent-style `call` requests receive a structured daemon error
-- dedicated stream clients (`lspee proxy`) receive a terminal stream error
+- dedicated stream clients (`lspee proxy`) receive a terminal stream error, including a client that connects after the notice was published
 - proxy converts that into an LSP `window/showMessage` warning for editors
 
 ## Resume instructions

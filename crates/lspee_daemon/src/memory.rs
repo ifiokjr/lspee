@@ -222,7 +222,10 @@ async fn evict_session(
 		.mark_terminating_with_notice(&sample.key, Some(notice.clone()))
 		.await;
 
-	let _ = sample.handle.events.send(notice);
+	sample
+		.handle
+		.events
+		.send_modify(|current| *current = Some(notice));
 
 	if let Err(error) = sample.handle.runtime.shutdown().await {
 		tracing::warn!(
@@ -282,7 +285,7 @@ mod tests {
 				.await
 				.expect("sample runtime should spawn"),
 		);
-		let (events, _) = tokio::sync::broadcast::channel(4);
+		let (events, _) = tokio::sync::watch::channel(None);
 
 		MemorySample {
 			key: key.clone(),

@@ -96,19 +96,11 @@ impl LspRuntime {
 			return Ok(None);
 		};
 
-		let output = Command::new("ps")
-			.args(["-o", "rss=", "-p", &pid.to_string()])
-			.output()
-			.await
-			.context("failed to sample lsp process memory via ps")?;
-
-		if !output.status.success() {
-			return Ok(None);
+		if let Some(bytes) = rss_bytes_from_proc_status(pid) {
+			return Ok(Some(bytes));
 		}
 
-		let stdout = String::from_utf8_lossy(&output.stdout);
-		let rss_kb = stdout.trim().parse::<u64>().ok();
-		Ok(rss_kb.map(|kb| kb * 1024))
+		rss_bytes_from_ps(pid).await
 	}
 
 	#[instrument(skip(self))]
@@ -176,6 +168,41 @@ impl LspRuntime {
 			}
 		}
 	}
+}
+
+/// Linux publishes resident set size as `VmRSS` kilobytes in `/proc/<pid>/status`.
+/// Reading that file does not depend on `ps` being on `PATH`. The devenv CI shell
+/// does not include `ps`, and a failed sample looks like zero RSS, so a memory
+/// budget of 0 never evicts and the eviction test waits until the job times out.
+fn rss_bytes_from_proc_status(pid: u32) -> Option<u64> {
+	let status = std::fs::read_to_string(format!("/proc/{pid}/status")).ok()?;
+
+	for line in status.lines() {
+		let Some(rest) = line.strip_prefix("VmRSS:") else {
+			continue;
+		};
+
+		let kb = rest.split_whitespace().next()?.parse::<u64>().ok()?;
+		return Some(kb.saturating_mul(1024));
+	}
+
+	None
+}
+
+async fn rss_bytes_from_ps(pid: u32) -> Result<Option<u64>> {
+	let output = Command::new("ps")
+		.args(["-o", "rss=", "-p", &pid.to_string()])
+		.output()
+		.await
+		.context("failed to sample lsp process memory via ps")?;
+
+	if !output.status.success() {
+		return Ok(None);
+	}
+
+	let stdout = String::from_utf8_lossy(&output.stdout);
+	let rss_kb = stdout.trim().parse::<u64>().ok();
+	Ok(rss_kb.map(|kb| kb * 1024))
 }
 
 #[derive(Debug)]
@@ -386,6 +413,8 @@ mod tests {
 
 	use super::LspTransport;
 	use super::encode_lsp_frame;
+	#[cfg(target_os = "linux")]
+	use super::rss_bytes_from_proc_status;
 
 	fn test_lsp_config(command: &str, args: Vec<String>) -> LspConfig {
 		LspConfig {
@@ -407,6 +436,17 @@ mod tests {
 		fs::create_dir_all(&dir).expect("should create temp dir");
 
 		dir
+	}
+
+	#[cfg(target_os = "linux")]
+	#[test]
+	fn proc_status_reports_rss_for_this_process() {
+		let rss = rss_bytes_from_proc_status(std::process::id());
+
+		assert!(
+			rss.is_some_and(|bytes| bytes > 0),
+			"VmRSS should be present for the test process"
+		);
 	}
 
 	#[test]

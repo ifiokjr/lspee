@@ -8,6 +8,9 @@ all-features = true
 [advisories]
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
+# Informational only: every chrono release is marked unmaintained and none are patched.
+# rmcp depends on chrono directly, so dropping it would mean dropping the MCP server.
+ignore = [{ id = "RUSTSEC-2026-0543", reason = "transitive through rmcp; advisory has no patched version" }]
 
 [licenses]
 allow = [

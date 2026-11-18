@@ -14,7 +14,7 @@
 
 ## Sampling
 
-Current implementation samples RSS via `ps -o rss= -p <pid>` on Unix-like platforms.
+On Linux, RSS is read from `VmRSS` in `/proc/<pid>/status`. Other Unix platforms fall back to `ps -o rss= -p <pid>`.
 
 ## Eviction policy
 

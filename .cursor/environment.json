@@ -1,0 +1,4 @@
+{
+	"name": "lspee",
+	"install": "[ ! -f .cursor/install.sh ] || bash .cursor/install.sh"
+}

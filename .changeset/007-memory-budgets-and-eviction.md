@@ -1,9 +1,11 @@
 ---
-"lspee_daemon": minor
-"lspee_config": minor
-"lspee_protocol": minor
-"lspee_cli": patch
+lspee_daemon: minor
+lspee_config: minor
+lspee_protocol: minor
+lspee_cli: patch
 ---
+
+# Memory budgets and eviction
 
 Add daemon-side memory budgets and eviction policy for shared LSP sessions.
 

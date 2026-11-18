@@ -1,8 +1,10 @@
 ---
-"lspee_cli": minor
-"lspee_daemon": minor
-"lspee_protocol": minor
+lspee_cli: minor
+lspee_daemon: minor
+lspee_protocol: minor
 ---
+
+# Daemon lifecycle controls
 
 Add daemon lifecycle control commands and protocol support:
 

@@ -1,0 +1,200 @@
+# :schema https://raw.githubusercontent.com/monochange/monochange/main/docs/src/schemas/monochange.schema.json
+
+# =============================================================================
+# monochange.toml — repository configuration for monochange
+# =============================================================================
+
+[defaults]
+package_type = "cargo"
+parent_bump = "patch"
+include_private = false
+warn_on_group_mismatch = true
+
+[defaults.changelog]
+path = "{{ path }}/CHANGELOG.md"
+format = "keep_a_changelog"
+initial_header = """
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+This changelog is managed by [monochange](https://github.com/monochange/monochange).
+"""
+
+[changelog]
+templates = [
+	"#### {{ summary }}\n\n{{ details }}\n\n{{ context }}",
+	"#### {{ summary }}\n\n{{ context }}",
+	"#### {{ summary }}\n\n{{ details }}",
+	"- {{ summary }}",
+]
+
+[changelog.sections]
+breaking = { heading = "💥 Breaking Change", description = "Breaking changes that require consumer updates or migration", priority = 10 }
+feat = { heading = "🚀 Feature", description = "New features, enhancements, and additions", priority = 20 }
+change = { heading = "📝 Changed", description = "Changes to existing behavior, functionality, or API semantics", priority = 25 }
+fix = { heading = "🐛 Fixed", description = "Bug fixes and error corrections", priority = 30 }
+test = { heading = "🧪 Testing", description = "Test suite improvements and additions", priority = 40 }
+refactor = { heading = "🔨 Refactor", description = "Code refactoring with no functional changes", priority = 40 }
+docs = { heading = "📖 Documentation", description = "Documentation updates and improvements", priority = 40 }
+security = { heading = "🔒 Security", description = "Security vulnerabilities, patches, and hardening", priority = 40 }
+perf = { heading = "⚡ Performance", description = "Performance optimizations and improvements", priority = 40 }
+other = { heading = "📦 Other", description = "Miscellaneous changes not categorized elsewhere", priority = 50 }
+
+[changelog.section_thresholds]
+collapse = 40
+ignored = 45
+
+[changelog.types]
+major = { bump = "major", section = "breaking", description = "Major version bump including breaking API changes requiring migration" }
+breaking = { bump = "major", section = "breaking", description = "Breaking changes that require consumers to update their code" }
+minor = { bump = "minor", section = "feat", description = "Minor version bump including new features and enhancements" }
+feat = { bump = "minor", section = "feat", description = "New functionality or capabilities added to the package" }
+change = { bump = "minor", section = "change", description = "Changes to existing behavior or API semantics" }
+patch = { bump = "patch", section = "fix", description = "Patch version bump for bug fixes and small corrections" }
+refactor = { bump = "patch", section = "refactor", description = "Internal code restructuring without changing external behavior" }
+test = { bump = "none", section = "test", description = "Additions or improvements to the test suite only" }
+fix = { bump = "patch", section = "fix", description = "Bug fixes and error corrections" }
+none = { bump = "none", section = "other", description = "Changes with no version impact such as tooling or formatting" }
+docs = { bump = "none", section = "docs", description = "Documentation updates and clarifications only" }
+security = { bump = "none", section = "security", description = "Security improvements, advisories, and vulnerability fixes" }
+perf = { bump = "none", section = "perf", description = "Performance and benchmarking improvements" }
+
+# =============================================================================
+# [package.*]
+# =============================================================================
+
+[package.lspee]
+path = "crates/lspee"
+
+[package.lspee_cli]
+path = "crates/lspee_cli"
+
+[package.lspee_config]
+path = "crates/lspee_config"
+
+[package.lspee_daemon]
+path = "crates/lspee_daemon"
+
+[package.lspee_lsp]
+path = "crates/lspee_lsp"
+
+[package.lspee_mcp]
+path = "crates/lspee_mcp"
+
+[package.lspee_protocol]
+path = "crates/lspee_protocol"
+
+[package.lspee_test_helpers]
+path = "testing/lspee_test_helpers"
+release = false
+
+[package."@ifi/lspee-skill"]
+path = "npm/skill"
+type = "npm"
+
+# =============================================================================
+# [group.*]
+# =============================================================================
+
+[group.core]
+packages = [
+	"lspee",
+	"lspee_cli",
+	"lspee_config",
+	"lspee_daemon",
+	"lspee_lsp",
+	"lspee_mcp",
+	"lspee_protocol",
+]
+release = true
+tag = true
+
+# =============================================================================
+# [changesets.affected]
+# =============================================================================
+
+[changesets.affected]
+enabled = true
+required = true
+skip_labels = ["no-changeset-required", "release"]
+comment_on_failure = true
+changed_paths = ["codecov.yml"]
+ignored_paths = [
+	"**/tests/**",
+	"**/__tests.rs",
+	"**/snapshots/**",
+	"fixtures/tests/**",
+]
+
+# =============================================================================
+# [ecosystems.*]
+# =============================================================================
+
+[ecosystems.cargo]
+enabled = true
+versioned_files = ["Cargo.toml"]
+
+[ecosystems.npm]
+enabled = true
+
+# =============================================================================
+# [source]
+# =============================================================================
+
+[source]
+provider = "github"
+owner = "ifiokjr"
+repo = "lspee"
+
+[source.releases]
+enabled = true
+draft = true
+prerelease = false
+source = "monochange"
+
+[source.pull_requests]
+enabled = true
+branch_prefix = "monochange/release"
+base = "main"
+title = "chore(release): prepare release"
+labels = ["release", "automated"]
+auto_merge = false
+verified_commits = true
+
+# =============================================================================
+# [cli.*]
+# =============================================================================
+
+[cli.change]
+help_text = "Create a change file for one or more packages"
+inputs = [
+	{ name = "interactive", type = "boolean", default = false },
+	{ name = "package", type = "string_list", required = true },
+	{ name = "bump", type = "choice", choices = ["none", "patch", "minor", "major"], default = "patch" },
+	{ name = "reason", type = "string", required = true },
+	{ name = "version", type = "string" },
+	{ name = "type", type = "string" },
+	{ name = "caused_by", type = "string_list" },
+	{ name = "details", type = "string" },
+	{ name = "output", type = "path" },
+]
+steps = [
+	{ name = "create change file", type = "CreateChangeFile", inputs = ["interactive", "package", "bump", "version", "reason", "type", "details", "output"] },
+]
+
+[cli.release]
+help_text = "Prepare a pull request release from discovered change files. It should only be run in a github action."
+inputs = [
+	{ name = "format", type = "choice", choices = ["text", "json", "markdown"], default = "markdown" },
+	{ name = "no_verify", type = "boolean", default = true },
+	{ name = "commit", help_text = "Whether to commit the changes", type = "boolean", default = false },
+	{ name = "create_pr", help_text = "Whether to create the PR after the commit", type = "boolean", default = false },
+]
+steps = [
+	{ type = "PrepareRelease", name = "plan release", allow_empty_changesets = true },
+	{ type = "Command", name = "generate cargo lockfile", when = "{{ number_of_changesets > 0 }}", command = "cargo generate-lockfile" },
+	{ type = "Command", name = "format changed files", when = "{{ number_of_changesets > 0 }}", command = "dprint fmt --allow-no-files" },
+	{ type = "CommitRelease", name = "create release commit", when = "{{ number_of_changesets > 0 && inputs.commit }}", inputs = { no_verify = "{{ inputs.no_verify }}" } },
+	{ type = "OpenReleaseRequest", name = "create the pr", when = "{{ number_of_changesets > 0 && inputs.commit && inputs.create_pr }}", inputs = { no_verify = "{{ inputs.no_verify }}" } },
+]
